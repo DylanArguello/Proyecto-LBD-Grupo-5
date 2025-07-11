@@ -7,6 +7,7 @@
 <html lang="en">
 
 <?php PrintCss(); ?>
+
 <body>
     <section class="h-100 gradient-form" style="background-color: #eee;">
         <div class="container py-5 h-100">
@@ -14,7 +15,6 @@
                 <div class="col-xl-10">
                     <div class="card rounded-3 text-black shadow">
                         <div class="row g-0">
-                            <!-- Columna del Formulario de Login -->
                             <div class="col-lg-6">
                                 <div class="card-body p-md-5 mx-md-4">
                                     <div class="text-center mb-4">
@@ -24,17 +24,17 @@
                                     </div>
 
                                     <?php
-                                        if(isset($_POST["Message"])) {
-                                            echo '<div class="alert alert-warning Mensajes">'
-                                                 . $_POST["Message"] .
-                                                 '</div>';                                   
+                                        if(isset($_POST["Message"])){
+                                            echo '<div class="alert alert-warning Mensajes">' 
+                                                  . $_POST["Message"] . 
+                                                  '</div>';                                   
                                         }
                                     ?>
 
                                     <form action="" method="POST">
-                                        <h5 class="mb-4 text-center">Iniciar Sesión</h5>
+                                        <h5 class="mb-4 text-center">Crear una cuenta</h5>
 
-                                        <!-- Correo Electrónico -->
+
                                         <div class="form-outline mb-4">
                                             <label class="form-label" for="txtCorreo">Correo Electrónico</label>
                                             <input 
@@ -47,7 +47,18 @@
                                             />
                                         </div>
 
-                                        <!-- Contraseña -->
+                                        <div class="form-outline mb-4">
+                                            <label class="form-label" for="txtUsername">Nombre de Usuario</label>
+                                            <input 
+                                                type="text" 
+                                                id="txtUsername" 
+                                                name="txtUsername" 
+                                                class="form-control"
+                                                placeholder="Ingresa tu nombre completo" 
+                                                required
+                                            />
+                                        </div>
+
                                         <div class="form-outline mb-4">
                                             <label class="form-label" for="txtContrasenna">Contraseña</label>
                                             <input 
@@ -55,36 +66,28 @@
                                                 id="txtContrasenna" 
                                                 name="txtContrasenna" 
                                                 class="form-control"
-                                                placeholder="Ingresa tu contraseña" 
+                                                placeholder="Ingresa tu nueva contraseña" 
                                                 required
                                             />
                                         </div>
 
-                                        <!-- Botón Iniciar Sesión -->
                                         <div class="text-center pt-1 mb-2 pb-2">
-                                        <button id="loginBtn" name="loginBtn"
+                                            <button 
+                                                id="crearCuentaBtn" 
+                                                name="crearCuentaBtn"
                                                 class="btn btn-brand btn-lg w-100"
-                                                type="submit">
-                                                Iniciar Sesión
-                                        </button>
+                                                type="submit"
+                                            >
+                                                Crear Cuenta
+                                            </button>
                                         </div>
 
                                         <div class="text-center mb-3">
-                                                <a class="text-muted" href="recuperarContrasenna.php">
-                                                    Recuperar tu contraseña
+                                            <span>¿Ya tienes cuenta? 
+                                                <a class="text-muted" href="login.php">
+                                                    Inicia Sesión
                                                 </a>
-                                        </div>
-
-                                        <!-- Sección para registro de nueva cuenta -->
-                                        <div class="d-flex align-items-center justify-content-center pb-4">
-                                            <p class="mb-0 me-2">¿No tienes una cuenta?</p>
-                                            <button 
-                                                type="button" 
-                                                class="btn btn-outline-secondary"
-                                                onclick="window.location.href='registrarCuenta.php'"
-                                            >
-                                                Crea una nueva cuenta
-                                            </button>
+                                            </span>
                                         </div>
                                     </form>
                                 </div>
@@ -92,20 +95,20 @@
 
                             <div class="col-lg-6 d-flex align-items-center gradient-custom-2">
                                 <div class="text-black px-3 py-4 p-md-5 mx-md-4">
-                                    <h4 class="mb-4">¡Tu bienestar comienza en Salud Integral CR!</h4>
+                                    <h4 class="mb-4">¡Bienestar total en Salud Integral CR!</h4>
                                     <p class="small mb-0">
-                                        Somos tu aliado de confianza en el cuidado integral de la salud.
-                                        Con más de <strong>10</strong> años de experiencia, ofrecemos consultas médicas especializadas,
-                                        programas de prevención y bienestar, así como apoyo en nutrición y salud mental,
-                                        todo respaldado por profesionales certificados y tecnología de vanguardia.
+                                        Tu salud en buenas manos: más de <strong>10</strong> años ofreciendo consultas especializadas,
+                                        planes de prevención y acompañamiento en nutrición y salud mental.
+                                        Nuestro equipo de expertos y la tecnología más moderna trabajan juntos
+                                        para cuidar de ti de forma integral.
                                     </p>
                                 </div>
                             </div>
                         </div>
-                    </div><!-- card -->
-                </div><!-- col-xl-10 -->
-            </div><!-- row -->
-        </div><!-- container -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 
     <?php PrintScript(); ?>
