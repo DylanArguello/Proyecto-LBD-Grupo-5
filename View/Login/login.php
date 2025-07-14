@@ -62,11 +62,19 @@
 
                                         <!-- Botón Iniciar Sesión -->
                                         <div class="text-center pt-1 mb-2 pb-2">
-                                        <button id="loginBtn" name="loginBtn"
+                                        <!-- <button id="loginBtn" name="loginBtn"
                                                 class="btn btn-brand btn-lg w-100"
                                                 type="submit">
                                                 Iniciar Sesión
-                                        </button>
+                                                
+                                        </button> -->
+                                                <button 
+                                                type="button" 
+                                                class="btn btn-brand btn-lg w-100"
+                                                onclick="window.location.href='home.php'"
+                                            >
+                                                Iniciar Sesión
+                                            </button>
                                         </div>
 
                                         <div class="text-center mb-3">

@@ -14,7 +14,7 @@ if (!$conn) {
     $e = oci_error();
     echo "Error al conectar: " . htmlentities($e['message'], ENT_QUOTES);
 } else {
-    echo "Conexión exitosa a Oracle";
+    echo "";
     oci_close($conn);
 }
 ?>

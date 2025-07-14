@@ -135,51 +135,39 @@ function PrintCss()
 function PrintBarra() 
 {
     echo '
+  <header id="header" class="header d-flex align-items-center fixed-top mt-4">
+    <div class="header-container container-fluid container-xl d-flex align-items-center justify-content-between">
+      <a href="home.php" class="logo d-flex align-items-center me-auto">
+        <img src="../assets/img/logo2.jpg" alt="Logo Salud Integral CR" width="40" class="me-2">
+        <h1 class="sitename mb-0">Salud Integral CR</h1>
+      </a>
+
+
     <nav id="navmenu" class="navmenu">
         <ul>
-          <li><a href="../Login/home.php" class="active">Home</a></li>
+          <li><a href="../Login/home.php">Inicio</a></li>
           <li><a href="../Servicios/about.php">Acerca de Nosotros</a></li>
-          <li><a href="departments.html">Departments</a></li>
+          <li><a href="departments.html">Departamentos</a></li>
           <li><a href="services.html">Servicios</a></li>
           <li><a href="doctors.html">Doctores</a></li>
-          <li class="dropdown"><a href="#"><span>More Pages</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
-            <ul>
-              <li><a href="department-details.html">Department Details</a></li>
-              <li><a href="service-details.html">Service Details</a></li>
-              <li><a href="appointment.html">Appointment</a></li>
-              <li><a href="testimonials.html">Testimonials</a></li>
-              <li><a href="faq.html">Frequently Asked Questions</a></li>
-              <li><a href="gallery.html">Gallery</a></li>
-              <li><a href="terms.html">Terms</a></li>
-              <li><a href="privacy.html">Privacy</a></li>
-              <li><a href="404.html">404</a></li>
-            </ul>
-          </li>
-          <li class="dropdown"><a href="#"><span>Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
-            <ul>
-              <li><a href="#">Dropdown 1</a></li>
-              <li class="dropdown"><a href="#"><span>Deep Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
-                <ul>
-                  <li><a href="#">Deep Dropdown 1</a></li>
-                  <li><a href="#">Deep Dropdown 2</a></li>
-                  <li><a href="#">Deep Dropdown 3</a></li>
-                  <li><a href="#">Deep Dropdown 4</a></li>
-                  <li><a href="#">Deep Dropdown 5</a></li>
-                </ul>
-              </li>
-              <li><a href="#">Dropdown 2</a></li>
-              <li><a href="#">Dropdown 3</a></li>
-              <li><a href="#">Dropdown 4</a></li>
-            </ul>
-          </li>
-          <li><a href="contact.html">Contact</a></li>
+
+
+          <li><a href="contact.html">Contacto</a></li>
         </ul>
         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
 
-      <a class="btn-getstarted" href="appointment.html">Appointment</a>
+      <a class="btn-getstarted" href="appointment.html">Agendar tu cita</a>
 
     </div>
+      </header>
+
+  <style>
+    main.container {
+      margin-top: 120px;
+    }
+  </style>
+      
 ';
 }
 
@@ -201,7 +189,7 @@ function PrintScript()
 function PrintFooter()
 {
     echo '
-    <footer class="footer gradient-custom-2 text-white text-center text-lg-start mt-auto">
+    <footer id="footer" class="footer gradient-custom-2 text-white text-center text-lg-start mt-auto">
     <div class="container footer-top">
       <div class="row gy-4">
         <div class="col-lg-4 col-md-6 footer-about">
@@ -271,9 +259,6 @@ function PrintFooter()
 
     <div class="container copyright text-center mt-4">
       <p>© <span>Copyright</span> <strong class="px-1 sitename">MyWebsite</strong> <span>All Rights Reserved</span></p>
-      <div class="credits">
-        Designed by <a href="https://bootstrapmade.com/">BootstrapMade</a>
-      </div>
     </div>
     </footer>';
 }

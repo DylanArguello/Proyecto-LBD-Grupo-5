@@ -9,20 +9,9 @@ include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/View/layoutInter
 
 <body class="index-page">
 
-  <!-- Navbar -->
-  <header id="header" class="header d-flex align-items-center fixed-top">
-    <div class="header-container container-fluid container-xl d-flex align-items-center justify-content-between">
-      <a href="home.php" class="logo d-flex align-items-center me-auto">
-        <img src="../assets/img/logo2.jpg" alt="Logo Salud Integral CR" width="40" class="me-2">
-        <h1 class="sitename mb-0">Salud Integral CR</h1>
-      </a>
-      <!-- Barra de navegación removida -->
       <?php PrintBarra(); ?>
-    </div>
-  </header>
-
-  <main class="main mt-5 pt-4">
-
+ 
+  <main>
     <!-- Hero Section -->
     <section id="hero" class="hero section dark-background">
       <div class="container-fluid p-0">
@@ -76,8 +65,8 @@ include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/View/layoutInter
                 <i class="bi bi-people-fill fs-1 text-primary mb-3"></i>
                 <h5 class="card-title">Pacientes</h5>
                 <div class="mt-auto">
-                  <a href="pacientes/list.php" class="btn btn-outline-primary mb-2 w-100">Ver lista</a>
-                  <a href="pacientes/create.php" class="btn btn-primary w-100">Nuevo paciente</a>
+                  <a href="../Pacientes/list.php" class="btn btn-outline-primary mb-2 w-100">Ver lista</a>
+                  <a href="../Pacientes/create.php" class="btn btn-primary w-100">Nuevo paciente</a>
                 </div>
               </div>
             </div>
@@ -89,8 +78,8 @@ include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/View/layoutInter
                 <i class="bi bi-person-badge-fill fs-1 text-success mb-3"></i>
                 <h5 class="card-title">Doctores</h5>
                 <div class="mt-auto">
-                  <a href="doctores/list.php" class="btn btn-outline-success mb-2 w-100">Ver lista</a>
-                  <a href="doctores/create.php" class="btn btn-success w-100">Nuevo doctor</a>
+                  <a href="../Doctores/list.php" class="btn btn-outline-success mb-2 w-100">Ver lista</a>
+                  <a href="../Doctores/create.php" class="btn btn-success w-100">Nuevo doctor</a>
                 </div>
               </div>
             </div>
@@ -102,8 +91,8 @@ include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/View/layoutInter
                 <i class="bi bi-journal-medical fs-1 text-warning mb-3"></i>
                 <h5 class="card-title">Especialidades</h5>
                 <div class="mt-auto">
-                  <a href="especialidades/list.php" class="btn btn-outline-warning mb-2 w-100">Ver lista</a>
-                  <a href="especialidades/create.php" class="btn btn-warning w-100">Nueva</a>
+                  <a href="../Especialidad/list.php" class="btn btn-outline-warning mb-2 w-100">Ver lista</a>
+                  <a href="../Especialidad/create.php" class="btn btn-warning w-100">Nueva</a>
                 </div>
               </div>
             </div>
@@ -115,15 +104,74 @@ include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/View/layoutInter
                 <i class="bi bi-calendar2-check-fill fs-1 text-info mb-3"></i>
                 <h5 class="card-title">Consultas</h5>
                 <div class="mt-auto">
-                  <a href="consultas/list.php" class="btn btn-outline-info mb-2 w-100">Ver agenda</a>
-                  <a href="consultas/create.php" class="btn btn-info w-100">Agendar</a>
+                  <a href="../Cita/list.php" class="btn btn-outline-info mb-2 w-100">Ver agenda</a>
+                  <a href="../Cita/create.php" class="btn btn-info w-100">Agendar</a>
                 </div>
               </div>
             </div>
           </div>
+        <!-- </div>
+      </div> -->
+
+          <div class="col-sm-6 col-md-4 col-lg-3">
+  <div class="card text-center shadow-sm h-100">
+    <div class="card-body d-flex flex-column">
+      <i class="bi bi-cash-stack fs-1 text-danger mb-3"></i>
+      <h5 class="card-title">Pagos</h5>
+      <div class="mt-auto">
+        <a href="../Pago/list.php"   class="btn btn-outline-danger mb-2 w-100">Ver lista</a>
+        <a href="../Pago/create.php" class="btn btn-danger w-100">Nuevo pago</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Usuarios -->
+<div class="col-sm-6 col-md-4 col-lg-3">
+  <div class="card text-center shadow-sm h-100">
+    <div class="card-body d-flex flex-column">
+      <i class="bi bi-person-lines-fill fs-1 text-secondary mb-3"></i>
+      <h5 class="card-title">Usuarios</h5>
+      <div class="mt-auto">
+        <a href="../Usuario/list.php"   class="btn btn-outline-secondary mb-2 w-100">Ver lista</a>
+        <a href="../Usuario/create.php" class="btn btn-secondary w-100">Nuevo usuario</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Disponibilidad -->
+<div class="col-sm-6 col-md-4 col-lg-3">
+  <div class="card text-center shadow-sm h-100">
+    <div class="card-body d-flex flex-column">
+      <i class="bi bi-clock-history fs-1 text-primary mb-3"></i>
+      <h5 class="card-title">Disponibilidad</h5>
+      <div class="mt-auto">
+        <a href="../Disponibilidad/list.php"   class="btn btn-outline-primary mb-2 w-100">Ver lista</a>
+        <a href="../Disponibilidad/create.php" class="btn btn-primary w-100">Nueva</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Historial Médico -->
+<div class="col-sm-6 col-md-4 col-lg-3">
+  <div class="card text-center shadow-sm h-100">
+    <div class="card-body d-flex flex-column">
+      <i class="bi bi-file-earmark-medical-fill fs-1 text-warning mb-3"></i>
+      <h5 class="card-title">Historial</h5>
+      <div class="mt-auto">
+        <a href="../Historial/list.php"   class="btn btn-outline-warning mb-2 w-100">Ver lista</a>
+        <a href="../Historial/create.php" class="btn btn-warning w-100">Nuevo registro</a>
+      </div>
+    </div>
+  </div>
+</div>
         </div>
       </div>
     </section>
+
+
 
     <!-- Quick Overview -->
     <section class="py-5 bg-light">
