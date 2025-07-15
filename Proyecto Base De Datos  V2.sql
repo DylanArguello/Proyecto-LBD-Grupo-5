@@ -5,7 +5,7 @@ CREATE TABLE ESPECIALIDAD (
     NOMBRE VARCHAR2(100) NOT NULL
 );
 
-/*Crud de Tabla de Espacialidad*/
+/*Crud de Tabla de Especialidad*/
 
 -- CREAR ESPECIALIDAD
 INSERT INTO ESPECIALIDAD (ID_ESPECIALIDAD, NOMBRE)
