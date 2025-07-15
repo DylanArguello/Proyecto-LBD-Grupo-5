@@ -6,16 +6,22 @@ class DisponibilidadModel {
         $this->conn = $db;
     }
 
-    public function obtenerTodas() {
-        $sql = "SELECT DISP.ID_DISPONIBILIDAD, DISP.DIA_SEMANA, DISP.HORA_INICIO, DISP.HORA_FIN,
-                       DR.ID_DOCTOR, DR.NOMBRE AS NOMBRE_DOCTOR
-                FROM DISPONIBILIDAD DISP
-                JOIN DOCTOR DR ON DISP.ID_DOCTOR = DR.ID_DOCTOR
-                ORDER BY DR.NOMBRE, DISP.DIA_SEMANA";
-        $stmt = oci_parse($this->conn, $sql);
-        oci_execute($stmt);
-        return $stmt;
-    }
+public function obtenerTodas() {
+    $sql = "SELECT 
+                DISP.ID_DISPONIBILIDAD, 
+                DISP.DIA_SEMANA, 
+                TO_CHAR(DISP.HORA_INICIO, 'HH24:MI') AS HORA_INICIO, 
+                TO_CHAR(DISP.HORA_FIN, 'HH24:MI') AS HORA_FIN,
+                DR.ID_DOCTOR, 
+                DR.NOMBRE AS NOMBRE_DOCTOR
+            FROM DISPONIBILIDAD DISP
+            JOIN DOCTOR DR ON DISP.ID_DOCTOR = DR.ID_DOCTOR
+            ORDER BY DR.NOMBRE, DISP.DIA_SEMANA";
+    $stmt = oci_parse($this->conn, $sql);
+    oci_execute($stmt);
+    return $stmt;
+}
+
 
     public function obtenerPorId($id) {
         $sql = "SELECT * FROM DISPONIBILIDAD WHERE ID_DISPONIBILIDAD = :id";

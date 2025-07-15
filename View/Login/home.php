@@ -102,10 +102,10 @@ include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/View/layoutInter
             <div class="card text-center shadow-sm h-100">
               <div class="card-body d-flex flex-column">
                 <i class="bi bi-calendar2-check-fill fs-1 text-info mb-3"></i>
-                <h5 class="card-title">Consultas</h5>
+                <h5 class="card-title">Citas</h5>
                 <div class="mt-auto">
                   <a href="../Cita/list.php" class="btn btn-outline-info mb-2 w-100">Ver agenda</a>
-                  <a href="../Cita/create.php" class="btn btn-info w-100">Agendar</a>
+                  <a href="../Cita/create.php" class="btn btn-info w-100">Agendar tu Cita</a>
                 </div>
               </div>
             </div>
@@ -200,14 +200,10 @@ include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/View/layoutInter
         </ul>
       </div>
     </section>
-
   </main>
 
 <?php PrintFooter(); ?>
-
-  <a href="#" id="scroll-top" class="scroll-top"><i class="bi bi-arrow-up-short"></i></a>
   <div id="preloader"></div>
-
 <?php PrintScript(); ?>
 
 </body>

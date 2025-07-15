@@ -23,18 +23,18 @@ include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/View/layoutInter
         <tbody>
         <?php
         $result = $disponibilidadModel->obtenerTodas();
-        while ($row = oci_fetch_assoc($result)) {
-            echo "<tr>
-                    <td>{$row['NOMBRE_DOCTOR']}</td>
-                    <td>{$row['DIA_SEMANA']}</td>
-                    <td>" . date("H:i", strtotime($row['HORA_INICIO'])) . "</td>
-                    <td>" . date("H:i", strtotime($row['HORA_FIN'])) . "</td>
-                    <td>
-                        <a href='edit.php?id={$row['ID_DISPONIBILIDAD']}' class='btn btn-sm btn-warning'>Editar</a>
-                        <a href='delete.php?id={$row['ID_DISPONIBILIDAD']}' class='btn btn-sm btn-danger'>Eliminar</a>
-                    </td>
-                  </tr>";
-        }
+while ($row = oci_fetch_assoc($result)) {
+    echo "<tr>
+            <td>{$row['NOMBRE_DOCTOR']}</td>
+            <td>{$row['DIA_SEMANA']}</td>
+            <td>" . htmlspecialchars($row['HORA_INICIO']) . "</td>
+            <td>" . htmlspecialchars($row['HORA_FIN']) . "</td>
+            <td>
+                <a href='edit.php?id={$row['ID_DISPONIBILIDAD']}' class='btn btn-sm btn-warning'>Editar</a>
+                <a href='delete.php?id={$row['ID_DISPONIBILIDAD']}' class='btn btn-sm btn-danger'>Eliminar</a>
+            </td>
+          </tr>";
+}
         ?>
         </tbody>
     </table>

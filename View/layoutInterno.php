@@ -189,6 +189,7 @@ function PrintScript()
 function PrintFooter()
 {
     echo '
+    <main class="flex-grow-1 container py-4">
     <footer id="footer" class="footer gradient-custom-2 text-white text-center text-lg-start mt-auto">
     <div class="container footer-top">
       <div class="row gy-4">
@@ -253,13 +254,9 @@ function PrintFooter()
             <li><a href="#">Flexo</a></li>
           </ul>
         </div>
-
       </div>
     </div>
-
-    <div class="container copyright text-center mt-4">
-      <p>© <span>Copyright</span> <strong class="px-1 sitename">MyWebsite</strong> <span>All Rights Reserved</span></p>
-    </div>
-    </footer>';
+    </footer>
+    </main>';
 }
 ?>

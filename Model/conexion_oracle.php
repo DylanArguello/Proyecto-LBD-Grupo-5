@@ -12,9 +12,6 @@ $conn = oci_connect($usuario, $contrasena, $cadena_conexion);
 
 if (!$conn) {
     $e = oci_error();
-    echo "Error al conectar: " . htmlentities($e['message'], ENT_QUOTES);
-} else {
-    echo "";
-    oci_close($conn);
+    die("Error al conectar: " . htmlentities($e['message'], ENT_QUOTES));
 }
-?>
+
