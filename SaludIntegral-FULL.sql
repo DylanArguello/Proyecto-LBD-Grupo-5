@@ -447,6 +447,51 @@ CREATE OR REPLACE PACKAGE BODY PKG_CITA AS
 END PKG_CITA;
 /
 
+
+
+
+-- Lista de citas con nombres de paciente y doctor
+CREATE OR REPLACE PROCEDURE SP_LISTAR_CITAS_NOMBRES(cur OUT SYS_REFCURSOR) IS
+BEGIN
+  OPEN cur FOR
+    SELECT
+      c.ID_CITA,
+      c.ID_PACIENTE,
+      p.NOMBRE AS PACIENTE,
+      c.ID_DOCTOR,
+      d.NOMBRE AS DOCTOR,
+      TO_CHAR(c.FECHA,'YYYY-MM-DD') AS FECHA,
+      TO_CHAR(c.HORA ,'HH24:MI')    AS HORA,
+      c.ESTADO
+    FROM CITA c
+    JOIN PACIENTE p ON p.ID_PACIENTE = c.ID_PACIENTE
+    JOIN DOCTOR   d ON d.ID_DOCTOR   = c.ID_DOCTOR
+    ORDER BY c.FECHA, c.HORA;
+END;
+/
+
+-- Obtener una cita con nombres de paciente y doctor
+CREATE OR REPLACE PROCEDURE SP_OBTENER_CITA_NOMBRES(p_id IN NUMBER, cur OUT SYS_REFCURSOR) IS
+BEGIN
+  OPEN cur FOR
+    SELECT
+      c.ID_CITA,
+      c.ID_PACIENTE,
+      p.NOMBRE AS PACIENTE,
+      c.ID_DOCTOR,
+      d.NOMBRE AS DOCTOR,
+      TO_CHAR(c.FECHA,'YYYY-MM-DD') AS FECHA,
+      TO_CHAR(c.HORA ,'HH24:MI')    AS HORA,
+      c.ESTADO
+    FROM CITA c
+    JOIN PACIENTE p ON p.ID_PACIENTE = c.ID_PACIENTE
+    JOIN DOCTOR   d ON d.ID_DOCTOR   = c.ID_DOCTOR
+   WHERE c.ID_CITA = p_id;
+END;
+/
+
+
+
 -- ===== PKG_DOCTOR =====
 CREATE OR REPLACE PACKAGE PKG_DOCTOR AS
   PROCEDURE sp_crear_doctor(p_nombre IN VARCHAR2,p_telefono IN VARCHAR2,p_id_especialidad IN NUMBER,p_id IN OUT NUMBER);
