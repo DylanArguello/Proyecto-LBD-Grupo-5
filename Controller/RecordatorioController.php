@@ -1,31 +1,24 @@
 <?php
-require_once __DIR__ . '/../Model/recordatorioModel.php';
+// Controller/RecordatorioController.php
+require_once __DIR__ . '/../Model/RecordatorioModel.php';
+require_once __DIR__ . '/../Model/CitaModel.php';
 
 class RecordatorioController {
-    private $model;
+  public RecordatorioModel $recordatorioModel;
+  public CitaModel $citaModel;
 
-    public function __construct() {
-        $this->model = new RecordatorioModel();
-    }
+  public function __construct() {
+    $this->recordatorioModel = new RecordatorioModel();
+    $this->citaModel = new CitaModel();
+  }
 
-    public function index() {
-        return $this->model->getAll();
-    }
-
-    public function show($id) {
-        return $this->model->getById($id);
-    }
-
-    public function store($data) {
-        return $this->model->create($data);
-    }
-
-    public function update($data) {
-        return $this->model->update($data);
-    }
-
-    public function destroy($id) {
-        return $this->model->delete($id);
-    }
+  public function destroy($id): void {
+    $this->recordatorioModel->cancelar($id);
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    $_SESSION['flash_success'] = 'Recordatorio cancelado correctamente.';
+  }
 }
-?>
+
+// Variables que usan tus vistas (patrón existente en el proyecto)
+$recordatorioModel = new RecordatorioModel();
+$citaModel         = new CitaModel();

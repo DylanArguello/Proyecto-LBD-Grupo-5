@@ -1,7 +1,4 @@
 <?php
-require_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/Model/conexion_oracle.php";
-require_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/Model/EspecialidadModel.php";
-
-$conn = oci_connect($usuario, $contrasena, $cadena_conexion);
-$especialidadModel = new EspecialidadModel($conn);
-?>
+require_once __DIR__ . '/../Model/EspecialidadModel.php';
+$especialidadModel = new EspecialidadModel();
+// Métodos: listar(), crear($nombre), actualizar($data), eliminar($id)

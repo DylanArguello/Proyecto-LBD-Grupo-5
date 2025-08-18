@@ -1,33 +1,65 @@
-<?php include_once "../../Controller/UsuarioController.php"; 
+<?php
+include_once __DIR__ . "/../../Controller/UsuarioController.php";
 include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/View/layoutInterno.php";
+
+$error = '';
+$rows  = [];
+
+try {
+  $items = $usuarioModel->listar();
+
+  // Normalizar a array si vino un cursor OCI
+  if (is_object($items) && (get_class($items) === 'OCIStatement' || get_class($items) === 'OCILob')) {
+    while ($r = oci_fetch_assoc($items)) { $rows[] = $r; }
+  } elseif (is_array($items)) {
+    $rows = $items;
+  } else {
+    // Último intento si OracleHelper devuelve recurso
+    if (is_resource($items)) {
+      while ($r = oci_fetch_assoc($items)) { $rows[] = $r; }
+    }
+  }
+} catch (Throwable $t) {
+  $error = $t->getMessage();
+}
 ?>
-<!DOCTYPE html><html lang="es">
+<!DOCTYPE html>
+<html lang="es">
 <?php PrintCss(); ?>
-<body><?php PrintBarra(); ?>
+<body>
+<?php PrintBarra(); ?>
 <main class="container py-4">
   <h2>Usuarios</h2>
-  <a href="create.php" class="btn btn-success mb-3">Nuevo Usuario</a>
 
-  <table class="table table-bordered">
+  <?php if ($error): ?>
+    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+  <?php endif; ?>
+
+  <a class="btn btn-primary mb-3" href="create.php">Nuevo Usuario</a>
+
+  <table class="table table-bordered table-sm">
     <thead>
-      <tr><th>ID</th><th>Usuario</th><th>Tipo</th><th>Acciones</th></tr>
+      <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Acciones</th></tr>
     </thead>
     <tbody>
-    <?php $st = $usuarioModel->obtenerTodos();
-          while ($u = oci_fetch_assoc($st)): ?>
+    <?php if ($rows): foreach ($rows as $r): ?>
       <tr>
-        <td><?= $u['ID_USUARIO'] ?></td>
-        <td><?= $u['NOMBRE_USUARIO'] ?></td>
-        <td><?= $u['TIPO_USUARIO'] ?></td>
+        <td><?= htmlspecialchars($r['ID_USUARIO']) ?></td>
+        <td><?= htmlspecialchars($r['NOMBRE_USUARIO'] ?? '') ?></td>
+        <td><?= htmlspecialchars($r['TIPO_USUARIO'] ?? '') ?></td>
         <td>
-          <a href="edit.php?id=<?= $u['ID_USUARIO'] ?>" class="btn btn-sm btn-warning">Editar</a>
-          <a href="delete.php?id=<?= $u['ID_USUARIO'] ?>" class="btn btn-sm btn-danger"
-             onclick="return confirm('¿Eliminar usuario?')">Eliminar</a>
+          <a class="btn btn-sm btn-warning"
+             href="edit.php?id=<?= urlencode($r['ID_USUARIO']) ?>">Editar</a>
+          <a class="btn btn-sm btn-danger"
+             href="edit.php?id=<?= urlencode($r['ID_USUARIO']) ?>&delete=1"
+             onclick="return confirm('¿Eliminar?')">Eliminar</a>
         </td>
       </tr>
-    <?php endwhile; ?>
+    <?php endforeach; else: ?>
+      <tr><td colspan="4" class="text-center">Sin registros</td></tr>
+    <?php endif; ?>
     </tbody>
   </table>
 </main>
-<?php PrintFooter(); ?>
-</body></html>
+</body>
+</html>

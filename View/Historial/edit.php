@@ -1,32 +1,28 @@
 <?php
-include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/View/layoutInterno.php";
-require_once "../../models/HistorialModel.php";
-
-$model = new HistorialModel();
-$Historial = $model->getById($_GET["id"]);
+include_once __DIR__ . "/../../Controller/HistorialController.php";
+$id=$_GET['id']??null; if(!$id){header("Location: list.php");exit;}
+$error='';
+if(isset($_GET['delete'])){ try{$historialModel->eliminar($id); header("Location: list.php"); exit;}catch(Throwable $t){$error=$t->getMessage();} }
+try{ $item=$historialModel->obtener($id); }catch(Throwable $t){ $error=$t->getMessage(); $item=null; }
+if($_SERVER['REQUEST_METHOD']==='POST'){
+  try{
+    $historialModel->actualizar([
+      'ID_HISTORIAL'=>$id,
+      'DIAGNOSTICO'=>$_POST['DIAGNOSTICO']??'',
+      'TRATAMIENTO'=>$_POST['TRATAMIENTO']??'',
+    ]);
+    header("Location: list.php"); exit;
+  }catch(Throwable $t){ $error=$t->getMessage(); }
+}
+include_once $_SERVER["DOCUMENT_ROOT"]."/Proyecto-LBD-Grupo-5/View/layoutInterno.php";
 ?>
-
-<?php PrintCss(); ?>
-<?php PrintBarra(); ?>
-
-<div class="container mt-5">
-    <h2>Editar Historial Médico</h2>
-    <form method="POST" action="../../controllers/HistorialController.php">
-        <input type="hidden" name="update" value="1">
-        <input type="hidden" name="id" value="<?= $Historial["ID_Historial"] ?>">
-
-        <div class="mb-3">
-            <label>Diagnóstico</label>
-            <textarea name="diagnostico" class="form-control" required><?= $Historial["DIAGNOSTICO"] ?></textarea>
-        </div>
-        <div class="mb-3">
-            <label>Tratamiento</label>
-            <textarea name="tratamiento" class="form-control" required><?= $Historial["TRATAMIENTO"] ?></textarea>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Actualizar</button>
-        <a href="list.php" class="btn btn-secondary">Cancelar</a>
-    </form>
-</div>
-
-<?php PrintFooter(); ?>
+<!DOCTYPE html><html lang="es"><?php PrintCss(); ?><body><?php PrintBarra(); ?>
+<main class="container py-4"><h2>Editar Historial</h2>
+<?php if($error):?><div class="alert alert-danger"><?=htmlspecialchars($error)?></div><?php endif;?>
+<div class="mb-2"><strong>ID Paciente:</strong> <?=htmlspecialchars($item['ID_PACIENTE']??'')?></div>
+<div class="mb-3"><strong>ID Cita:</strong> <?=htmlspecialchars($item['ID_CITA']??'')?></div>
+<form method="post">
+  <label class="form-label">Diagnóstico</label><textarea class="form-control mb-2" name="DIAGNOSTICO" rows="3" required><?=htmlspecialchars($item['DIAGNOSTICO']??'')?></textarea>
+  <label class="form-label">Tratamiento</label><textarea class="form-control mb-3" name="TRATAMIENTO" rows="3" required><?=htmlspecialchars($item['TRATAMIENTO']??'')?></textarea>
+  <button class="btn btn-success">Actualizar</button> <a class="btn btn-secondary" href="list.php">Cancelar</a>
+</form></main></body></html>

@@ -1,77 +1,92 @@
 <?php
-include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/View/layoutInterno.php";
-include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/Model/conexion_oracle.php";
-include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/Model/CitaModel.php";
+include_once __DIR__ . "/../../Controller/CitaController.php";
+include_once $_SERVER["DOCUMENT_ROOT"]."/Proyecto-LBD-Grupo-5/View/layoutInterno.php";
 
-$citaModel = new CitaModel($conn);
-$nextId = $citaModel->getNextId();
-$pacientes = $citaModel->getPacientes();
-$doctores = $citaModel->getDoctores();
-$especialidades = $citaModel->getEspecialidades();
+function rows_from($maybe) {
+  $out = [];
+  if (is_object($maybe) && get_class($maybe) === 'OCIStatement') {
+    while ($r = oci_fetch_assoc($maybe)) { $out[] = $r; }
+  } elseif (is_resource($maybe)) {
+    while ($r = oci_fetch_assoc($maybe)) { $out[] = $r; }
+  } elseif (is_array($maybe)) {
+    $out = $maybe;
+  }
+  return $out;
+}
+
+$error = '';
+try {
+  $pacientesRaw = $pacienteModel->listar();   // pkg_paciente.sp_listar(cur) -> ID_PACIENTE, NOMBRE, ...
+  $doctoresRaw  = $doctorModel->listar();     // PKG_DOCTOR.sp_listar_doctores(cur) -> ID_DOCTOR, NOMBRE, ...
+  $pacientes    = rows_from($pacientesRaw);
+  $doctores     = rows_from($doctoresRaw);
+} catch (Throwable $t) {
+  $error = $t->getMessage(); $pacientes = $doctores = [];
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  try {
+    $citaModel->crear([
+      'ID_PACIENTE' => $_POST['ID_PACIENTE'] ?? '',
+      'ID_DOCTOR'   => $_POST['ID_DOCTOR']   ?? '',
+      'FECHA'       => $_POST['FECHA']       ?? '',       // 'YYYY-MM-DD'
+      'HORA'        => substr($_POST['HORA'] ?? '', 0, 5),// 'HH:MM'
+      'ESTADO'      => $_POST['ESTADO']      ?? 'AGENDADA',
+    ]);
+    header("Location: list.php"); exit;
+  } catch (Throwable $t) { $error = $t->getMessage(); }
+}
+$estados = ['AGENDADA','CONFIRMADA','CANCELADA'];
 ?>
-
 <!DOCTYPE html>
 <html lang="es">
 <?php PrintCss(); ?>
 <body>
 <?php PrintBarra(); ?>
-
 <main class="container py-4">
-<div class="mb-3">
-  <h2 class="mb-4">Registrar Cita</h2>
-  <form action="../../Controller/CitaController.php" method="POST">
-    <input type="hidden" name="action" value="create">
-    <input type="hidden" name="ID_CITA" value="<?= $nextId ?>">
+  <h2>Nueva Cita</h2>
 
-    <div class="mb-3">
-      <label class="form-label">Fecha</label>
-      <input type="date" name="FECHA" class="form-control" required>
-    </div>
+  <?php if ($error): ?>
+    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+  <?php endif; ?>
 
-    <div class="mb-3">
-      <label class="form-label">Hora</label>
-      <input type="time" name="HORA" class="form-control" required>
-    </div>
+  <form method="post" autocomplete="off">
+    <label class="form-label">Paciente</label>
+    <select class="form-select mb-2" name="ID_PACIENTE" required>
+      <option value="">-- Seleccione --</option>
+      <?php foreach ($pacientes as $p): ?>
+        <option value="<?= htmlspecialchars($p['ID_PACIENTE']) ?>">
+          <?= htmlspecialchars($p['NOMBRE']) ?>
+        </option>
+      <?php endforeach; ?>
+    </select>
 
-    <div class="mb-3">
-      <label class="form-label">Paciente</label>
-      <select name="ID_PACIENTE" class="form-select" required>
-        <option value="">Seleccione un paciente</option>
-        <?php foreach ($pacientes as $p): ?>
-          <option value="<?= $p['ID_PACIENTE'] ?>"><?= $p['NOMBRE'] ?></option>
-        <?php endforeach; ?>
-      </select>
-    </div>
+    <label class="form-label">Doctor</label>
+    <select class="form-select mb-2" name="ID_DOCTOR" required>
+      <option value="">-- Seleccione --</option>
+      <?php foreach ($doctores as $d): ?>
+        <option value="<?= htmlspecialchars($d['ID_DOCTOR']) ?>">
+          <?= htmlspecialchars($d['NOMBRE']) ?>
+        </option>
+      <?php endforeach; ?>
+    </select>
 
-    <div class="mb-3">
-      <label class="form-label">Doctor</label>
-      <select name="ID_DOCTOR" class="form-select" required>
-        <option value="">Seleccione un doctor</option>
-        <?php foreach ($doctores as $d): ?>
-          <option value="<?= $d['ID_DOCTOR'] ?>"><?= $d['NOMBRE'] ?></option>
-        <?php endforeach; ?>
-      </select>
-    </div>
+    <label class="form-label">Fecha</label>
+    <input class="form-control mb-2" type="date" name="FECHA" required>
 
-    <div class="mb-3">
-      <label class="form-label">Especialidad</label>
-      <select name="ID_ESPECIALIDAD" class="form-select" required>
-        <option value="">Seleccione una especialidad</option>
-        <?php foreach ($especialidades as $e): ?>
-          <option value="<?= $e['ID_ESPECIALIDAD'] ?>"><?= $e['NOMBRE'] ?></option>
-        <?php endforeach; ?>
-      </select>
-    </div>
+    <label class="form-label">Hora</label>
+    <input class="form-control mb-2" type="time" name="HORA" required>
 
-    <input type="hidden" name="ESTADO" value="Agendada">
+    <label class="form-label">Estado</label>
+    <select class="form-select mb-3" name="ESTADO" required>
+      <?php foreach ($estados as $e): ?>
+        <option value="<?= htmlspecialchars($e) ?>"><?= htmlspecialchars($e) ?></option>
+      <?php endforeach; ?>
+    </select>
 
-    <button type="submit" class="btn btn-primary">Guardar</button>
-    <a href="list.php" class="btn btn-secondary">Cancelar</a>
+    <button class="btn btn-success">Guardar</button>
+    <a class="btn btn-secondary" href="list.php">Cancelar</a>
   </form>
-</div>
 </main>
-
-<?php PrintFooter(); ?>
-<?php PrintScript(); ?>
 </body>
 </html>

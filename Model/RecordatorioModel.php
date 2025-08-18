@@ -1,64 +1,43 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
+// Model/RecordatorioModel.php
+require_once __DIR__ . '/OracleHelper.php';
 
-class RecordatorioModel {
-    private $conn;
+class RecordatorioModel extends OracleHelper {
 
-    public function __construct() {
-        $this->conn = Database::getConnection();
+  /** Lista: usa el paquete (ya devuelve FECHA_ENVIO como 'YYYY-MM-DD') */
+  public function listar(): array {
+    return $this->execCursor("BEGIN PKG_RECORDATORIO.sp_listar(:cur); END;");
+  }
+
+  /** Crear: usa OUT id del paquete (no dependemos de SP_GENERAR_ID_RECORDATORIO) */
+  public function crear(array $d): int {
+    $id = null; // IN OUT
+    $this->execProc("BEGIN PKG_RECORDATORIO.sp_crear_recordatorio(:id,:cita,:msg,:fecha); END;", [
+      ":id"    => $id,
+      ":cita"  => $d['ID_CITA'],
+      ":msg"   => $d['MENSAJE'],
+      ":fecha" => $d['FECHA_ENVIO'], // 'YYYY-MM-DD'
+    ]);
+    return (int)$id;
+  }
+
+  /** Reprogramar: fecha string 'YYYY-MM-DD' */
+  public function reprogramar($id, $fecha): void {
+    $this->execProc("BEGIN PKG_RECORDATORIO.sp_reprogramar(:id,:fecha); END;", [
+      ":id" => $id, ":fecha" => $fecha
+    ]);
+  }
+
+  /** Cancelar (eliminar registro) */
+  public function cancelar($id): void {
+    $this->execProc("BEGIN PKG_RECORDATORIO.sp_cancelar(:id); END;", [":id"=>$id]);
+  }
+
+  /** Conveniencia: obtener uno (no hay sp_obtener en el paquete) */
+  public function obtener($id) {
+    foreach ($this->listar() as $r) {
+      if ((int)$r['ID_RECORDATORIO'] === (int)$id) return $r;
     }
-
-    public function getAll() {
-        $query = "SELECT R.ID_RECORDATORIO, C.ID_CITA, P.NOMBRE AS PACIENTE, C.FECHA, C.HORA, R.MENSAJE, R.FECHA_ENVIO
-                  FROM RECORDATORIO R
-                  JOIN CITA C ON R.ID_CITA = C.ID_CITA
-                  JOIN PACIENTE P ON C.ID_PACIENTE = P.ID_PACIENTE
-                  ORDER BY R.FECHA_ENVIO DESC";
-        $stmt = oci_parse($this->conn, $query);
-        oci_execute($stmt);
-        $result = [];
-        while ($row = oci_fetch_assoc($stmt)) {
-            $result[] = $row;
-        }
-        return $result;
-    }
-
-    public function getById($id) {
-        $query = "SELECT * FROM RECORDATORIO WHERE ID_RECORDATORIO = :id";
-        $stmt = oci_parse($this->conn, $query);
-        oci_bind_by_name($stmt, ':id', $id);
-        oci_execute($stmt);
-        return oci_fetch_assoc($stmt);
-    }
-
-    public function create($data) {
-        $query = "INSERT INTO RECORDATORIO (ID_RECORDATORIO, ID_CITA, MENSAJE, FECHA_ENVIO)
-                  VALUES (:id, :cita, :mensaje, TO_DATE(:fecha, 'YYYY-MM-DD'))";
-        $stmt = oci_parse($this->conn, $query);
-        oci_bind_by_name($stmt, ':id', $data['id']);
-        oci_bind_by_name($stmt, ':cita', $data['cita']);
-        oci_bind_by_name($stmt, ':mensaje', $data['mensaje']);
-        oci_bind_by_name($stmt, ':fecha', $data['fecha']);
-        return oci_execute($stmt);
-    }
-
-    public function update($data) {
-        $query = "UPDATE RECORDATORIO
-                  SET ID_CITA = :cita, MENSAJE = :mensaje, FECHA_ENVIO = TO_DATE(:fecha, 'YYYY-MM-DD')
-                  WHERE ID_RECORDATORIO = :id";
-        $stmt = oci_parse($this->conn, $query);
-        oci_bind_by_name($stmt, ':id', $data['id']);
-        oci_bind_by_name($stmt, ':cita', $data['cita']);
-        oci_bind_by_name($stmt, ':mensaje', $data['mensaje']);
-        oci_bind_by_name($stmt, ':fecha', $data['fecha']);
-        return oci_execute($stmt);
-    }
-
-    public function delete($id) {
-        $query = "DELETE FROM RECORDATORIO WHERE ID_RECORDATORIO = :id";
-        $stmt = oci_parse($this->conn, $query);
-        oci_bind_by_name($stmt, ':id', $id);
-        return oci_execute($stmt);
-    }
+    return null;
+  }
 }
-?>

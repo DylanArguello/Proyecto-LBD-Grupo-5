@@ -1,60 +1,66 @@
 <?php
-include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/View/layoutInterno.php";
-include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/Model/CitaModel.php";
-include_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/Model/conexion_oracle.php";
+include_once __DIR__ . "/../../Controller/CitaController.php";
+include_once $_SERVER["DOCUMENT_ROOT"]."/Proyecto-LBD-Grupo-5/View/layoutInterno.php";
 
-$model = new CitaModel($conn);
-$citas = $model->getAll();
+function rows_from($maybe) {
+  $out = [];
+  if (is_object($maybe) && get_class($maybe) === 'OCIStatement') {
+    while ($r = oci_fetch_assoc($maybe)) { $out[] = $r; }
+  } elseif (is_resource($maybe)) {
+    while ($r = oci_fetch_assoc($maybe)) { $out[] = $r; }
+  } elseif (is_array($maybe)) { $out = $maybe; }
+  return $out;
+}
+
+$error = ''; $rows = [];
+try {
+  $items = $citaModel->listar();   // PKG_CITA.sp_listar(cur)
+  $rows  = rows_from($items);
+} catch (Throwable $t) {
+  $error = $t->getMessage();
+}
 ?>
-
 <!DOCTYPE html>
 <html lang="es">
 <?php PrintCss(); ?>
 <body>
 <?php PrintBarra(); ?>
-
 <main class="container py-4">
-<div class="mb-3">
-  <h2 class="mb-4">Lista de Citas</h2>
-  <a href="create.php" class="btn btn-success mb-3">Registrar nueva cita</a>
+  <h2>Lista de Citas</h2>
 
-  <table class="table table-bordered table-hover">
-    <thead class="table-light">
+  <?php if ($error): ?>
+    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+  <?php endif; ?>
+
+  <a class="btn btn-primary mb-3" href="create.php">Nueva Cita</a>
+
+  <table class="table table-bordered table-sm">
+    <thead>
       <tr>
-        <th>ID</th>
-        <th>Paciente</th>
-        <th>Doctor</th>
-        <th>Fecha</th>
-        <th>Hora</th>
-        <th>Estado</th>
-        <th>Acciones</th>
+        <th>ID</th><th>Paciente</th><th>Doctor</th><th>Fecha</th><th>Hora</th><th>Estado</th><th>Acciones</th>
       </tr>
     </thead>
     <tbody>
-      <?php foreach ($citas as $cita): ?>
-        <tr>
-          <td><?= htmlspecialchars($cita['ID_CITA']) ?></td>
-          <td><?= htmlspecialchars($cita['PACIENTE']) ?></td>
-          <td><?= htmlspecialchars($cita['DOCTOR']) ?></td>
-          <td><?= htmlspecialchars($cita['FECHA']) ?></td>
-          <td><?= htmlspecialchars($cita['HORA']) ?></td>
-          <td><?= htmlspecialchars($cita['ESTADO']) ?></td>
-          <td>
-            <a href="edit.php?id=<?= $cita['ID_CITA'] ?>" class="btn btn-sm btn-warning">Editar</a>
-            <a href="../../Controller/CitaController.php?action=delete&id=<?= $cita['ID_CITA'] ?>"
-               class="btn btn-sm btn-danger"
-               onclick="return confirm('¿Estás seguro de eliminar esta cita?')">
-              Eliminar
-            </a>
-          </td>
-        </tr>
-      <?php endforeach; ?>
+    <?php if ($rows): foreach ($rows as $r): ?>
+      <tr>
+        <td><?= htmlspecialchars($r['ID_CITA']) ?></td>
+        <td><?= htmlspecialchars($r['PACIENTE'] ?? $r['ID_PACIENTE'] ?? '') ?></td>
+        <td><?= htmlspecialchars($r['DOCTOR']   ?? $r['ID_DOCTOR']   ?? '') ?></td>
+        <td><?= htmlspecialchars($r['FECHA'] ?? '') ?></td>
+        <td><?= htmlspecialchars(substr($r['HORA'] ?? '', 0, 5)) ?></td>
+        <td><?= htmlspecialchars($r['ESTADO'] ?? '') ?></td>
+        <td>
+          <a class="btn btn-sm btn-warning" href="edit.php?id=<?= urlencode($r['ID_CITA']) ?>">Editar</a>
+          <a class="btn btn-sm btn-danger"
+             href="edit.php?id=<?= urlencode($r['ID_CITA']) ?>&delete=1"
+             onclick="return confirm('¿Eliminar?')">Eliminar</a>
+        </td>
+      </tr>
+    <?php endforeach; else: ?>
+      <tr><td colspan="7" class="text-center">Sin registros</td></tr>
+    <?php endif; ?>
     </tbody>
   </table>
-</div>
 </main>
-
-<?php PrintFooter(); ?>
-<?php PrintScript(); ?>
 </body>
 </html>

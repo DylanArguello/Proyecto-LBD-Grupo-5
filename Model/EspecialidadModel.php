@@ -1,47 +1,47 @@
 <?php
-class EspecialidadModel {
-    private $conn;
+require_once __DIR__ . '/OracleHelper.php';
 
-    public function __construct($db) {
-        $this->conn = $db;
-    }
+class EspecialidadModel extends OracleHelper {
 
-    public function obtenerTodas() {
-        $sql = "SELECT * FROM ESPECIALIDAD ORDER BY NOMBRE";
-        $stmt = oci_parse($this->conn, $sql);
-        oci_execute($stmt);
-        return $stmt;
+  /** Normaliza cursor/array a array de filas */
+  private function rowsFrom($maybe) {
+    $out = [];
+    if (is_object($maybe) && get_class($maybe) === 'OCIStatement') {
+      while ($r = oci_fetch_assoc($maybe)) { $out[] = $r; }
+    } elseif (is_resource($maybe)) {
+      while ($r = oci_fetch_assoc($maybe)) { $out[] = $r; }
+    } elseif (is_array($maybe)) {
+      $out = $maybe;
     }
+    return $out;
+  }
 
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM ESPECIALIDAD WHERE ID_ESPECIALIDAD = :id";
-        $stmt = oci_parse($this->conn, $sql);
-        oci_bind_by_name($stmt, ":id", $id);
-        oci_execute($stmt);
-        return oci_fetch_assoc($stmt);
-    }
+  /** Lista todas las especialidades (array seguro para las vistas) */
+  public function listar(): array {
+    $cur = $this->execCursor("BEGIN pkg_especialidad.sp_listar(:cur); END;");
+    return $this->rowsFrom($cur); // evita foreach sobre cursor
+  }
 
-    public function insertar($id, $nombre) {
-        $sql = "INSERT INTO ESPECIALIDAD (ID_ESPECIALIDAD, NOMBRE) VALUES (:id, :nombre)";
-        $stmt = oci_parse($this->conn, $sql);
-        oci_bind_by_name($stmt, ":id", $id);
-        oci_bind_by_name($stmt, ":nombre", $nombre);
-        return oci_execute($stmt);
-    }
+  /** Crear usando el paquete: el ID se autogenera si llega NULL */
+  public function crear(string $nombre): int {
+    $id = null;
+    $this->execProc("BEGIN pkg_especialidad.sp_crear(:id,:n); END;", [
+      ":id" => $id,          // IN OUT: el paquete rellena si es NULL
+      ":n"  => $nombre
+    ]);
+    return (int)$id;
+  }
 
-    public function actualizar($id, $nombre) {
-        $sql = "UPDATE ESPECIALIDAD SET NOMBRE = :nombre WHERE ID_ESPECIALIDAD = :id";
-        $stmt = oci_parse($this->conn, $sql);
-        oci_bind_by_name($stmt, ":nombre", $nombre);
-        oci_bind_by_name($stmt, ":id", $id);
-        return oci_execute($stmt);
-    }
+  /** Actualizar nombre */
+  public function actualizar(array $d): void {
+    $this->execProc("BEGIN pkg_especialidad.sp_actualizar(:id,:n); END;", [
+      ":id" => $d['ID_ESPECIALIDAD'],
+      ":n"  => $d['NOMBRE']
+    ]);
+  }
 
-    public function eliminar($id) {
-        $sql = "DELETE FROM ESPECIALIDAD WHERE ID_ESPECIALIDAD = :id";
-        $stmt = oci_parse($this->conn, $sql);
-        oci_bind_by_name($stmt, ":id", $id);
-        return oci_execute($stmt);
-    }
+  /** Eliminar por ID */
+  public function eliminar($id): void {
+    $this->execProc("BEGIN pkg_especialidad.sp_eliminar(:id); END;", [":id" => $id]);
+  }
 }
-?>

@@ -1,66 +1,69 @@
 <?php
-class PagoModel {
-    private $conn;
+require_once __DIR__ . '/OracleHelper.php';
 
-    public function __construct($db) {
-        $this->conn = $db;
-    }
+class PagoModel extends OracleHelper {
 
-    public function obtenerTodos() {
-        $sql = "SELECT P.ID_PAGO,
-                       P.ID_CITA,
-                       PAC.NOMBRE   AS PACIENTE,
-                       P.MONTO,
-                       TO_CHAR(P.FECHA,'YYYY-MM-DD') AS FECHA,
-                       P.METODO_PAGO
-                  FROM PAGO  P
-                  JOIN CITA  C   ON P.ID_CITA     = C.ID_CITA
-                  JOIN PACIENTE PAC ON C.ID_PACIENTE = PAC.ID_PACIENTE
-              ORDER BY P.FECHA DESC";
-        $st = oci_parse($this->conn, $sql);
-        oci_execute($st);
-        return $st;            
+  /** Normaliza cursor/array a array de filas */
+  private function rowsFrom($maybe) {
+    $out = [];
+    if (is_object($maybe) && get_class($maybe) === 'OCIStatement') {
+      while ($r = oci_fetch_assoc($maybe)) { $out[] = $r; }
+    } elseif (is_resource($maybe)) {
+      while ($r = oci_fetch_assoc($maybe)) { $out[] = $r; }
+    } elseif (is_array($maybe)) {
+      $out = $maybe;
     }
+    return $out;
+  }
 
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM PAGO WHERE ID_PAGO = :id";
-        $st  = oci_parse($this->conn, $sql);
-        oci_bind_by_name($st, ":id", $id);
-        oci_execute($st);
-        return oci_fetch_assoc($st);
+  /** Lista con nombre de paciente (JOIN lo hace el SP) */
+  public function listar(): array {
+    $cur  = $this->execCursor("BEGIN SP_OBTENER_PAGOS(:cur); END;");
+    $rows = $this->rowsFrom($cur);
+    foreach ($rows as &$r) {              // alias amigables para la vista
+      if (isset($r['FECHA']))       $r['FECHA_PAGO'] = $r['FECHA'];
+      if (isset($r['METODO_PAGO'])) $r['METODO']     = $r['METODO_PAGO'];
     }
+    return $rows;
+  }
 
-    public function crear($datos) {
-        $sql = "INSERT INTO PAGO (ID_PAGO, ID_CITA, MONTO, FECHA, METODO_PAGO)
-                VALUES (:id, :cita, :monto, TO_DATE(:fecha, 'YYYY-MM-DD'), :metodo)";
-        $st  = oci_parse($this->conn, $sql);
-        oci_bind_by_name($st, ":id",     $datos['id']);
-        oci_bind_by_name($st, ":cita",   $datos['cita']);
-        oci_bind_by_name($st, ":monto",  $datos['monto']);
-        oci_bind_by_name($st, ":fecha",  $datos['fecha']);
-        oci_bind_by_name($st, ":metodo", $datos['metodo']);
-        return oci_execute($st);
-    }
+  public function obtener($id) {
+    $cur  = $this->execCursor("BEGIN SP_OBTENER_PAGO_POR_ID(:id,:cur); END;", [":id"=>$id]);
+    $rows = $this->rowsFrom($cur);
+    return $rows[0] ?? null;
+  }
 
-    public function actualizar($datos) {
-        $sql = "UPDATE PAGO
-                   SET MONTO = :monto,
-                       FECHA = TO_DATE(:fecha, 'YYYY-MM-DD'),
-                       METODO_PAGO = :metodo
-                 WHERE ID_PAGO = :id";
-        $st  = oci_parse($this->conn, $sql);
-        oci_bind_by_name($st, ":monto",  $datos['monto']);
-        oci_bind_by_name($st, ":fecha",  $datos['fecha']);
-        oci_bind_by_name($st, ":metodo", $datos['metodo']);
-        oci_bind_by_name($st, ":id",     $datos['id']);
-        return oci_execute($st);
-    }
+  /** Crear pago usando PKG_PAGO (sin OUT de estado, fecha en VARCHAR2) */
+  public function crear(array $d): int {
+    $id = null; // el paquete lo rellena si llega NULL
+    $this->execProc(
+      "BEGIN PKG_PAGO.sp_crear_pago(:cita,:monto,:f,:metodo,:id); END;",
+      [
+        ":cita"   => $d['ID_CITA'],
+        ":monto"  => $d['MONTO'],
+        ":f"      => $d['FECHA_PAGO'], // 'YYYY-MM-DD' del <input type="date">
+        ":metodo" => $d['METODO'],
+        ":id"     => $id               // IN OUT
+      ]
+    );
+    return (int)$id;
+  }
 
-    public function eliminar($id) {
-        $sql = "DELETE FROM PAGO WHERE ID_PAGO = :id";
-        $st  = oci_parse($this->conn, $sql);
-        oci_bind_by_name($st, ":id", $id);
-        return oci_execute($st);
-    }
+  /** Actualizar pago con PKG_PAGO */
+  public function actualizar(array $d): void {
+    $this->execProc(
+      "BEGIN PKG_PAGO.sp_actualizar_pago(:id,:monto,:f,:metodo); END;",
+      [
+        ":id"     => $d['ID_PAGO'],
+        ":monto"  => $d['MONTO'],
+        ":f"      => $d['FECHA_PAGO'], // 'YYYY-MM-DD'
+        ":metodo" => $d['METODO']
+      ]
+    );
+  }
+
+  /** Eliminar pago con PKG_PAGO */
+  public function eliminar($id): void {
+    $this->execProc("BEGIN PKG_PAGO.sp_eliminar_pago(:id); END;", [":id"=>$id]);
+  }
 }
-?>

@@ -1,7 +1,9 @@
 <?php
-require_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/Model/conexion_oracle.php";
-require_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/Model/DoctorModel.php";
+require_once __DIR__ . '/../Model/DoctorModel.php';
+require_once __DIR__ . '/../Model/EspecialidadModel.php';
 
-$conn = oci_connect($usuario, $contrasena, $cadena_conexion);
-$doctorModel = new DoctorModel($conn);
-?>
+$doctorModel       = new DoctorModel();
+$especialidadModel = new EspecialidadModel();
+// Uso en vistas:
+//   $doctorModel->listar(), ->crear($data), ->actualizar($data), ->eliminar($id)
+//   $especialidadModel->listar()   // para combos de especialidad

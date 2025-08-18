@@ -1,72 +1,72 @@
 <?php
-class DisponibilidadModel {
-    private $conn;
+require_once __DIR__ . '/OracleHelper.php';
 
-    public function __construct($db) {
-        $this->conn = $db;
+class DisponibilidadModel extends OracleHelper {
+
+  /** Normaliza cursor/array a array de filas */
+  private function rowsFrom($maybe) {
+    $out = [];
+    if (is_object($maybe) && get_class($maybe) === 'OCIStatement') {
+      while ($r = oci_fetch_assoc($maybe)) { $out[] = $r; }
+    } elseif (is_resource($maybe)) {
+      while ($r = oci_fetch_assoc($maybe)) { $out[] = $r; }
+    } elseif (is_array($maybe)) { $out = $maybe; }
+    return $out;
+  }
+
+  /** Extrae HH:MM de cualquier string de fecha/hora */
+  private function fmtHora($v) {
+    if ($v === null) return null;
+    $s = (string)$v;
+    if (preg_match('/\b(\d{2}:\d{2})\b/', $s, $m)) return $m[1]; // 13:45, 13:45:00, 2025-01-01 13:45:00
+    return $s; // si ya viene como HH:MM o un texto legible
+  }
+
+  /**
+   * Lista SIN SQL directo en PHP.
+   * Usa el paquete y luego formatea horas en PHP a 'HH:MM' para la UI.
+   */
+  public function listar(): array {
+    $cur  = $this->execCursor("BEGIN pkg_disponibilidad.sp_listar_disponibilidad(:cur); END;");
+    $rows = $this->rowsFrom($cur);
+    foreach ($rows as &$r) {
+      if (isset($r['HORA_INICIO'])) $r['HORA_INICIO'] = $this->fmtHora($r['HORA_INICIO']);
+      if (isset($r['HORA_FIN']))    $r['HORA_FIN']    = $this->fmtHora($r['HORA_FIN']);
     }
+    return $rows;
+  }
 
-public function obtenerTodas() {
-    $sql = "SELECT 
-                DISP.ID_DISPONIBILIDAD, 
-                DISP.DIA_SEMANA, 
-                TO_CHAR(DISP.HORA_INICIO, 'HH24:MI') AS HORA_INICIO, 
-                TO_CHAR(DISP.HORA_FIN, 'HH24:MI') AS HORA_FIN,
-                DR.ID_DOCTOR, 
-                DR.NOMBRE AS NOMBRE_DOCTOR
-            FROM DISPONIBILIDAD DISP
-            JOIN DOCTOR DR ON DISP.ID_DOCTOR = DR.ID_DOCTOR
-            ORDER BY DR.NOMBRE, DISP.DIA_SEMANA";
-    $stmt = oci_parse($this->conn, $sql);
-    oci_execute($stmt);
-    return $stmt;
+  /** Crear: el paquete genera ID si llega NULL; horas como DATE vía TO_DATE en PL/SQL */
+  public function crear(array $d): int {
+    $id = null; // IN OUT (autogenera la secuencia si es NULL)
+    $this->execProc(
+      "BEGIN pkg_disponibilidad.sp_crear_disponibilidad(:id,:doc,:dia,TO_DATE(:ini,'HH24:MI'),TO_DATE(:fin,'HH24:MI')); END;",
+      [
+        ":id"  => $id,
+        ":doc" => $d['ID_DOCTOR'],
+        ":dia" => $d['DIA_SEMANA'],
+        ":ini" => $d['HORA_INICIO'], // 'HH:MM' del <input type="time">
+        ":fin" => $d['HORA_FIN']     // 'HH:MM'
+      ]
+    );
+    return (int)$id;
+  }
+
+  /** Actualizar: mismas conversiones de hora */
+  public function actualizar(array $d): void {
+    $this->execProc(
+      "BEGIN pkg_disponibilidad.sp_actualizar_disponibilidad(:id,:doc,:dia,TO_DATE(:ini,'HH24:MI'),TO_DATE(:fin,'HH24:MI')); END;",
+      [
+        ":id"  => $d['ID_DISPONIBILIDAD'],
+        ":doc" => $d['ID_DOCTOR'],
+        ":dia" => $d['DIA_SEMANA'],
+        ":ini" => $d['HORA_INICIO'],
+        ":fin" => $d['HORA_FIN']
+      ]
+    );
+  }
+
+  public function eliminar($id): void {
+    $this->execProc("BEGIN pkg_disponibilidad.sp_eliminar_disponibilidad(:id); END;", [":id" => $id]);
+  }
 }
-
-
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM DISPONIBILIDAD WHERE ID_DISPONIBILIDAD = :id";
-        $stmt = oci_parse($this->conn, $sql);
-        oci_bind_by_name($stmt, ":id", $id);
-        oci_execute($stmt);
-        return oci_fetch_assoc($stmt);
-    }
-
-    public function insertar($id, $doctor_id, $dia, $inicio, $fin) {
-        $sql = "INSERT INTO DISPONIBILIDAD (ID_DISPONIBILIDAD, ID_DOCTOR, DIA_SEMANA, HORA_INICIO, HORA_FIN)
-                VALUES (:id, :doctor_id, :dia, TO_DATE(:inicio, 'HH24:MI'), TO_DATE(:fin, 'HH24:MI'))";
-        $stmt = oci_parse($this->conn, $sql);
-        oci_bind_by_name($stmt, ":id", $id);
-        oci_bind_by_name($stmt, ":doctor_id", $doctor_id);
-        oci_bind_by_name($stmt, ":dia", $dia);
-        oci_bind_by_name($stmt, ":inicio", $inicio);
-        oci_bind_by_name($stmt, ":fin", $fin);
-        return oci_execute($stmt);
-    }
-
-    public function actualizar($id, $dia, $inicio, $fin) {
-        $sql = "UPDATE DISPONIBILIDAD SET DIA_SEMANA = :dia,
-                 HORA_INICIO = TO_DATE(:inicio, 'HH24:MI'),
-                 HORA_FIN = TO_DATE(:fin, 'HH24:MI') WHERE ID_DISPONIBILIDAD = :id";
-        $stmt = oci_parse($this->conn, $sql);
-        oci_bind_by_name($stmt, ":dia", $dia);
-        oci_bind_by_name($stmt, ":inicio", $inicio);
-        oci_bind_by_name($stmt, ":fin", $fin);
-        oci_bind_by_name($stmt, ":id", $id);
-        return oci_execute($stmt);
-    }
-
-    public function eliminar($id) {
-        $sql = "DELETE FROM DISPONIBILIDAD WHERE ID_DISPONIBILIDAD = :id";
-        $stmt = oci_parse($this->conn, $sql);
-        oci_bind_by_name($stmt, ":id", $id);
-        return oci_execute($stmt);
-    }
-
-    public function obtenerDoctores() {
-        $sql = "SELECT ID_DOCTOR, NOMBRE FROM DOCTOR ORDER BY NOMBRE";
-        $stmt = oci_parse($this->conn, $sql);
-        oci_execute($stmt);
-        return $stmt;
-    }
-}
-?>

@@ -14,4 +14,3 @@ if (!$conn) {
     $e = oci_error();
     die("Error al conectar: " . htmlentities($e['message'], ENT_QUOTES));
 }
-
