@@ -38,3 +38,5 @@ catch(Throwable $t){ $error=$t->getMessage(); }
 </tr>
 <?php endforeach; if(!$rows):?><tr><td colspan="6" class="text-center">Sin registros</td></tr><?php endif;?>
 </tbody></table></main></body></html>
+
+<?php PrintFooter(); ?>

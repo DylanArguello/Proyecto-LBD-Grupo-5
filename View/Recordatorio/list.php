@@ -39,15 +39,14 @@ try { $items = $recordatorioModel->listar(); } catch (Throwable $t) { $error=$t-
       <td><?=htmlspecialchars($r['MENSAJE']??'')?></td>
       <td><?=htmlspecialchars($r['FECHA_ENVIO']??'')?></td>
       <td class="d-flex gap-1">
-        <a class="btn btn-sm btn-warning" href="edit.php?id=<?=urlencode($r['ID_RECORDATORIO'])?>">Reprogramar</a>
+        <a class="btn btn-sm btn-warning" href="edit.php?id=<?=urlencode($r['ID_RECORDATORIO'])?>">Editar</a>
         <!-- Cancelación con Modal Bootstrap (sin SweetAlert2) -->
         <a class="btn btn-sm btn-danger"
-           href="edit.php?id=<?=urlencode($r['ID_RECORDATORIO'])?>&cancel=1"
-           data-delete-link
-           data-entity="recordatorio"
-           data-name="<?=htmlspecialchars(mb_strimwidth($r['MENSAJE']??'',0,40,'…'))?>">
-           Cancelar
+        href="edit.php?id=<?=urlencode($r['ID_RECORDATORIO'])?>&cancel=1"
+        onclick="return confirm('¿Seguro que deseas eliminar/cancelar este recordatorio? Esta acción no se puede deshacer.');">
+        Eliminar
         </a>
+
       </td>
     </tr>
   <?php endforeach; if(!$items): ?>
@@ -102,3 +101,5 @@ try { $items = $recordatorioModel->listar(); } catch (Throwable $t) { $error=$t-
 })();
 </script>
 </body></html>
+
+<?php PrintFooter(); ?>

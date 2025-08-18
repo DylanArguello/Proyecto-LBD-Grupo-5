@@ -23,3 +23,5 @@ $error=''; try{$items=$doctorModel->listar();}catch(Throwable $t){$error=$t->get
 </tr>
 <?php endforeach; if(!$items): ?><tr><td colspan="5" class="text-center">Sin registros</td></tr><?php endif;?>
 </tbody></table></main></body></html>
+
+<?php PrintFooter(); ?>

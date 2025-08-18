@@ -29,3 +29,5 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   </select>
   <button class="btn btn-success">Guardar</button> <a class="btn btn-secondary" href="list.php">Cancelar</a>
 </form></main></body></html>
+
+<?php PrintFooter(); ?>

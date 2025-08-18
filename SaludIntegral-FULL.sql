@@ -1,16 +1,9 @@
-/* ========================================================================== */
-/* SALUD INTEGRAL CR – ESQUEMA LIMPIO/ORDENADO                                */
-/* ========================================================================== */
-/* Requisitos: ejecuta con un usuario con privilegios sobre el esquema.       */
-/* Consejos: usa “Run Script (F5)” en SQL Developer/SQLcl para interpretar “/” */
-/* ========================================================================== */
+/* SALUD INTEGRAL CR */
 
 SET DEFINE OFF
 SET SERVEROUTPUT ON SIZE UNLIMITED
 
-/* ============================================================================
-   1) TABLAS (BASE)
-   ============================================================================ */
+/* 1) TABLAS (BASE)*/
 
 -- ESPECIALIDAD
 CREATE TABLE ESPECIALIDAD (
@@ -126,9 +119,7 @@ CREATE TABLE AUDITORIA_RECORDATORIO (
 );
 /
 
- /* ============================================================================
-    2) SECUENCIAS
-    ============================================================================ */
+ /* 2) SECUENCIAS */
 CREATE SEQUENCE SEQ_ESPECIALIDAD   START WITH 1 INCREMENT BY 1;
 /
 CREATE SEQUENCE SEQ_DOCTOR         START WITH 1 INCREMENT BY 1;
@@ -150,9 +141,8 @@ CREATE SEQUENCE SEQ_RECORDATORIO   START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE SEQ_AUDITORIA_PAGO START WITH 1 INCREMENT BY 1;
 /
 
- /* ============================================================================
-    3) VISTAS (solo lecturas útiles para UI/reportes)
-    ============================================================================ */
+ /* 3) VISTAS (solo lecturas útiles para UI/reportes)*/
+ 
 CREATE OR REPLACE VIEW V_CITAS AS
 SELECT c.ID_CITA,
        p.NOMBRE AS NOMBRE_PACIENTE,
@@ -250,9 +240,8 @@ SELECT p.ID_PACIENTE, p.NOMBRE AS PACIENTE,
  ORDER BY p.NOMBRE;
 /
 
- /* ============================================================================
-    4) TRIGGERS (validación de negocio)
-    ============================================================================ */
+ /* 4) TRIGGERS (validación de negocio)*/
+ 
 -- Estado de CITA restringido
 CREATE OR REPLACE TRIGGER TRG_VALIDAR_ESTADO_CITA
 BEFORE INSERT OR UPDATE ON CITA
@@ -287,9 +276,7 @@ BEGIN
 END;
 /
 
- /* ============================================================================
-    5) TRIGGERS (auditoría)
-    ============================================================================ */
+ /* 5) TRIGGERS (auditoría */
 CREATE OR REPLACE TRIGGER TR_AUDITAR_PAGO
 AFTER INSERT OR UPDATE OR DELETE ON PAGO
 FOR EACH ROW
@@ -330,122 +317,169 @@ BEGIN
 END;
 /
 
- /* ============================================================================
-    6) PAQUETES PRINCIPALES
-    ============================================================================ */
+ /* 6) PAQUETES PRINCIPALES */
 
 -- ===== PKG_CITA =====
 CREATE OR REPLACE PACKAGE PKG_CITA AS
+  /* === Lectura === */
+  PROCEDURE sp_listar   (cur OUT SYS_REFCURSOR);
+  PROCEDURE sp_obtener  (p_id IN NUMBER, cur OUT SYS_REFCURSOR);
+
+  /* === Escritura (entradas como texto para evitar NLS) ===
+     p_fecha: 'YYYY-MM-DD'   p_hora: 'HH24:MI' */
   PROCEDURE sp_crear(
-    p_id_paciente IN VARCHAR2, p_id_doctor IN VARCHAR2,
-    p_fecha IN VARCHAR2, p_hora IN VARCHAR2, p_estado IN VARCHAR2,
-    p_id IN OUT NUMBER);
+    p_id_paciente IN VARCHAR2,
+    p_id_doctor   IN VARCHAR2,
+    p_fecha       IN VARCHAR2,
+    p_hora        IN VARCHAR2,
+    p_estado      IN VARCHAR2,
+    p_id          OUT NUMBER
+  );
+
   PROCEDURE sp_actualizar(
-    p_id IN VARCHAR2, p_id_paciente IN VARCHAR2, p_id_doctor IN VARCHAR2,
-    p_fecha IN VARCHAR2, p_hora IN VARCHAR2, p_estado IN VARCHAR2);
-  PROCEDURE sp_eliminar(p_id IN VARCHAR2);
-  PROCEDURE sp_listar(cur OUT SYS_REFCURSOR);
-  PROCEDURE sp_obtener(p_id IN VARCHAR2, cur OUT SYS_REFCURSOR);
+    p_id          IN VARCHAR2,
+    p_id_paciente IN VARCHAR2,
+    p_id_doctor   IN VARCHAR2,
+    p_fecha       IN VARCHAR2,
+    p_hora        IN VARCHAR2,
+    p_estado      IN VARCHAR2
+  );
+
+  /* === Eliminación === */
+  PROCEDURE sp_eliminar       (p_id IN NUMBER);
+  PROCEDURE sp_eliminar_safe  (p_id IN NUMBER, p_force IN NUMBER DEFAULT 0, p_status OUT VARCHAR2);
 END PKG_CITA;
 /
 
 CREATE OR REPLACE PACKAGE BODY PKG_CITA AS
-  FUNCTION to_num(p VARCHAR2) RETURN NUMBER IS n NUMBER;
-  BEGIN
-    IF p IS NULL OR TRIM(p) IS NULL THEN RETURN NULL; END IF;
-    BEGIN n := TO_NUMBER(TRIM(p)); RETURN n; EXCEPTION WHEN VALUE_ERROR THEN RETURN NULL; END;
-  END;
 
-  FUNCTION norm_fecha(p VARCHAR2) RETURN DATE IS v DATE;
-  BEGIN
-    BEGIN v := TO_DATE(p,'YYYY-MM-DD'); RETURN v; EXCEPTION WHEN OTHERS THEN NULL; END;
-    BEGIN v := TO_DATE(p,'DD/MM/YYYY'); RETURN v; EXCEPTION WHEN OTHERS THEN NULL; END;
-    RETURN TO_DATE(p);
-  END;
-
-  FUNCTION norm_hora_date(p VARCHAR2) RETURN DATE IS v DATE;
-  BEGIN
-    IF p IS NULL OR TRIM(p) IS NULL THEN RETURN NULL; END IF;
-    BEGIN v := TO_DATE(p,'HH24:MI'); RETURN v; EXCEPTION WHEN OTHERS THEN NULL; END;
-  END;
-
-  PROCEDURE sp_crear_cita(p_id_paciente IN NUMBER,p_id_doctor IN NUMBER,
-                          p_fecha IN VARCHAR2,p_hora IN VARCHAR2,p_estado IN VARCHAR2,
-                          p_id IN OUT NUMBER) IS
-    v_fecha DATE := norm_fecha(p_fecha); v_hora DATE := norm_hora_date(p_hora);
-  BEGIN
-    IF p_id IS NULL THEN SELECT SEQ_CITA.NEXTVAL INTO p_id FROM DUAL; END IF;
-    INSERT INTO CITA(ID_CITA,ID_PACIENTE,ID_DOCTOR,FECHA,HORA,ESTADO)
-    VALUES(p_id,p_id_paciente,p_id_doctor,v_fecha,v_hora,p_estado);
-  END;
-
-  PROCEDURE sp_actualizar_cita(p_id IN NUMBER,p_id_paciente IN NUMBER,p_id_doctor IN NUMBER,
-                               p_fecha IN VARCHAR2,p_hora IN VARCHAR2,p_estado IN VARCHAR2) IS
-    v_fecha DATE := norm_fecha(p_fecha); v_hora DATE := norm_hora_date(p_hora);
-  BEGIN
-    UPDATE CITA
-       SET ID_PACIENTE=p_id_paciente, ID_DOCTOR=p_id_doctor,
-           FECHA=v_fecha, HORA=v_hora, ESTADO=p_estado
-     WHERE ID_CITA=p_id;
-  END;
-
-  PROCEDURE sp_eliminar_cita(p_id IN NUMBER) IS
-  BEGIN
-    DELETE FROM CITA WHERE ID_CITA=p_id;
-  END;
-
-  PROCEDURE sp_listar_citas(cur OUT SYS_REFCURSOR) IS
-  BEGIN
-    OPEN cur FOR
-      SELECT ID_CITA, ID_PACIENTE, ID_DOCTOR,
-             TO_CHAR(FECHA,'YYYY-MM-DD') AS FECHA,
-             TO_CHAR(HORA,'HH24:MI')     AS HORA,
-             ESTADO
-        FROM CITA
-       ORDER BY ID_CITA;
-  END;
-
-  PROCEDURE sp_obtener_cita(p_id IN NUMBER, cur OUT SYS_REFCURSOR) IS
-  BEGIN
-    OPEN cur FOR
-      SELECT ID_CITA, ID_PACIENTE, ID_DOCTOR,
-             TO_CHAR(FECHA,'YYYY-MM-DD') AS FECHA,
-             TO_CHAR(HORA,'HH24:MI')     AS HORA,
-             ESTADO
-        FROM CITA
-       WHERE ID_CITA = p_id;
-  END;
-
-  -- Wrappers para UI (reciben VARCHAR2)
-  PROCEDURE sp_crear(p_id_paciente IN VARCHAR2,p_id_doctor IN VARCHAR2,
-                     p_fecha IN VARCHAR2,p_hora IN VARCHAR2,p_estado IN VARCHAR2,
-                     p_id IN OUT NUMBER) IS
-  BEGIN
-    sp_crear_cita(to_num(p_id_paciente),to_num(p_id_doctor),p_fecha,p_hora,p_estado,p_id);
-  END;
-
-  PROCEDURE sp_actualizar(p_id IN VARCHAR2,p_id_paciente IN VARCHAR2,p_id_doctor IN VARCHAR2,
-                          p_fecha IN VARCHAR2,p_hora IN VARCHAR2,p_estado IN VARCHAR2) IS
-  BEGIN
-    sp_actualizar_cita(to_num(p_id),to_num(p_id_paciente),to_num(p_id_doctor),p_fecha,p_hora,p_estado);
-  END;
-
-  PROCEDURE sp_eliminar(p_id IN VARCHAR2) IS
-  BEGIN
-    sp_eliminar_cita(to_num(p_id));
-  END;
-
+  /* ================== LECTURA ================== */
   PROCEDURE sp_listar(cur OUT SYS_REFCURSOR) IS
   BEGIN
-    sp_listar_citas(cur);
+    OPEN cur FOR
+      SELECT
+        c.ID_CITA,
+        c.ID_PACIENTE,
+        p.NOMBRE AS PACIENTE,
+        c.ID_DOCTOR,
+        d.NOMBRE AS DOCTOR,
+        TO_CHAR(c.FECHA,'YYYY-MM-DD') AS FECHA,
+        TO_CHAR(c.HORA ,'HH24:MI')    AS HORA,
+        c.ESTADO
+      FROM CITA c
+      JOIN PACIENTE p ON p.ID_PACIENTE = c.ID_PACIENTE
+      JOIN DOCTOR   d ON d.ID_DOCTOR   = c.ID_DOCTOR
+      ORDER BY c.FECHA, c.HORA;
   END;
 
-  PROCEDURE sp_obtener(p_id IN VARCHAR2, cur OUT SYS_REFCURSOR) IS
+  PROCEDURE sp_obtener(p_id IN NUMBER, cur OUT SYS_REFCURSOR) IS
   BEGIN
-    sp_obtener_cita(to_num(p_id),cur);
+    OPEN cur FOR
+      SELECT
+        c.ID_CITA,
+        c.ID_PACIENTE,
+        p.NOMBRE AS PACIENTE,
+        c.ID_DOCTOR,
+        d.NOMBRE AS DOCTOR,
+        TO_CHAR(c.FECHA,'YYYY-MM-DD') AS FECHA,
+        TO_CHAR(c.HORA ,'HH24:MI')    AS HORA,
+        c.ESTADO
+      FROM CITA c
+      JOIN PACIENTE p ON p.ID_PACIENTE = c.ID_PACIENTE
+      JOIN DOCTOR   d ON d.ID_DOCTOR   = c.ID_DOCTOR
+     WHERE c.ID_CITA = p_id;
   END;
+
+  /* ================== ESCRITURA ================== */
+  PROCEDURE sp_crear(
+    p_id_paciente IN VARCHAR2,
+    p_id_doctor   IN VARCHAR2,
+    p_fecha       IN VARCHAR2,   -- 'YYYY-MM-DD'
+    p_hora        IN VARCHAR2,   -- 'HH24:MI'
+    p_estado      IN VARCHAR2,
+    p_id          OUT NUMBER
+  ) IS
+    v_fecha DATE;
+    v_hora  DATE;
+  BEGIN
+    -- Conversión explícita (sin depender de NLS)
+    v_fecha := TO_DATE(p_fecha, 'YYYY-MM-DD');
+    v_hora  := TO_DATE(p_hora , 'HH24:MI');
+
+    SELECT SEQ_CITA.NEXTVAL INTO p_id FROM dual;
+
+    INSERT INTO CITA (ID_CITA, ID_PACIENTE, ID_DOCTOR, FECHA, HORA, ESTADO)
+    VALUES (
+      p_id,
+      TO_NUMBER(p_id_paciente),
+      TO_NUMBER(p_id_doctor),
+      v_fecha,
+      v_hora,
+      p_estado
+    );
+  END;
+
+  PROCEDURE sp_actualizar(
+    p_id          IN VARCHAR2,
+    p_id_paciente IN VARCHAR2,
+    p_id_doctor   IN VARCHAR2,
+    p_fecha       IN VARCHAR2,   -- 'YYYY-MM-DD'
+    p_hora        IN VARCHAR2,   -- 'HH24:MI'
+    p_estado      IN VARCHAR2
+  ) IS
+    v_fecha DATE;
+    v_hora  DATE;
+  BEGIN
+    -- Conversión explícita
+    v_fecha := TO_DATE(p_fecha, 'YYYY-MM-DD');
+    v_hora  := TO_DATE(p_hora , 'HH24:MI');
+
+    UPDATE CITA
+       SET ID_PACIENTE = TO_NUMBER(p_id_paciente),
+           ID_DOCTOR   = TO_NUMBER(p_id_doctor),
+           FECHA       = v_fecha,
+           HORA        = v_hora,
+           ESTADO      = p_estado
+     WHERE ID_CITA     = TO_NUMBER(p_id);
+  END;
+
+  /* ================== ELIMINACIÓN ================== */
+  PROCEDURE sp_eliminar_safe(p_id IN NUMBER, p_force IN NUMBER DEFAULT 0, p_status OUT VARCHAR2) IS
+    v_cnt NUMBER := 0;
+  BEGIN
+    -- ¿Tiene hijos?
+    SELECT COUNT(*) INTO v_cnt FROM PAGO             WHERE ID_CITA = p_id;
+    IF v_cnt = 0 THEN SELECT COUNT(*) INTO v_cnt FROM RECORDATORIO    WHERE ID_CITA = p_id; END IF;
+    IF v_cnt = 0 THEN SELECT COUNT(*) INTO v_cnt FROM HISTORIAL_MEDICO WHERE ID_CITA = p_id; END IF;
+
+    IF v_cnt > 0 AND NVL(p_force,0) = 0 THEN
+      p_status := 'TIENE_RELACIONADOS';
+      RETURN;
+    END IF;
+
+    IF NVL(p_force,0) = 1 THEN
+      DELETE FROM PAGO             WHERE ID_CITA = p_id;
+      DELETE FROM RECORDATORIO     WHERE ID_CITA = p_id;
+      DELETE FROM HISTORIAL_MEDICO WHERE ID_CITA = p_id;
+    END IF;
+
+    DELETE FROM CITA WHERE ID_CITA = p_id;
+    p_status := 'OK';
+  END;
+
+  PROCEDURE sp_eliminar(p_id IN NUMBER) IS
+    v_status VARCHAR2(50);
+  BEGIN
+    sp_eliminar_safe(p_id => p_id, p_force => 0, p_status => v_status);
+    IF v_status <> 'OK' THEN
+      RAISE_APPLICATION_ERROR(-20050, 'No se puede eliminar la cita: tiene pagos, recordatorios o historial asociado.');
+    END IF;
+  END;
+
 END PKG_CITA;
 /
+
+
 
 
 
@@ -865,9 +899,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_REPORTES AS
 END PKG_REPORTES;
 /
 
- /* ============================================================================
-    7) PROCEDIMIENTOS “SP_*” (compatibilidad con tu app)
-    ============================================================================ */
+ /* 7) PROCEDIMIENTOS */
 
 -- PAGOS
 CREATE OR REPLACE PROCEDURE SP_OBTENER_PAGOS(p_resultado OUT SYS_REFCURSOR) AS
@@ -980,9 +1012,8 @@ BEGIN
 END;
 /
 
- /* ============================================================================
-    8) FUNCIONES (consultas rápidas)
-    ============================================================================ */
+ /* 8) FUNCIONES (consultas rápidas)*/
+ 
 CREATE OR REPLACE FUNCTION FN_TOTAL_PAGOS_POR_PACIENTE(p_id_paciente IN NUMBER) RETURN NUMBER IS v_total NUMBER;
 BEGIN
   SELECT NVL(SUM(p.MONTO),0) INTO v_total
@@ -1094,9 +1125,7 @@ EXCEPTION WHEN NO_DATA_FOUND THEN RETURN NULL;
 END;
 /
 
- /* ============================================================================
-    9) SINCRONIZACIÓN DE SECUENCIAS (opcional tras cargas previas)
-    ============================================================================ */
+ /* 9) SINCRONIZACIÓN DE SECUENCIAS*/
 DECLARE
   PROCEDURE sync_seq(p_seq VARCHAR2, p_table VARCHAR2, p_col VARCHAR2) IS
     v_target NUMBER; v_curr NUMBER; v_inc NUMBER;
@@ -1123,9 +1152,7 @@ BEGIN
 END;
 /
  
- /* ============================================================================
-    10) RECOMPILACIÓN + DIAGNÓSTICOS
-    ============================================================================ */
+ /* 10) RECOMPILACIÓN + DIAGNÓSTICOS */
 BEGIN
   DBMS_UTILITY.compile_schema(schema => USER, compile_all => FALSE);
 END;

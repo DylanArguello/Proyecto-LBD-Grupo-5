@@ -26,3 +26,5 @@ include_once $_SERVER["DOCUMENT_ROOT"]."/Proyecto-LBD-Grupo-5/View/layoutInterno
   <label class="form-label">Tratamiento</label><textarea class="form-control mb-3" name="TRATAMIENTO" rows="3" required><?=htmlspecialchars($item['TRATAMIENTO']??'')?></textarea>
   <button class="btn btn-success">Actualizar</button> <a class="btn btn-secondary" href="list.php">Cancelar</a>
 </form></main></body></html>
+
+<?php PrintFooter(); ?>

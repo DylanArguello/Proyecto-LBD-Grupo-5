@@ -64,3 +64,5 @@ try {
 </main>
 </body>
 </html>
+
+<?php PrintFooter(); ?>

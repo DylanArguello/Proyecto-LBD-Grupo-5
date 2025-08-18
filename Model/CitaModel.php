@@ -3,27 +3,28 @@ require_once __DIR__ . '/OracleHelper.php';
 
 class CitaModel extends OracleHelper {
 
-  // Listar usando los SP standalone que devuelven nombres
+  /* === Lecturas === */
   public function listar(): array {
-    return $this->execCursor("BEGIN SP_LISTAR_CITAS_NOMBRES(:cur); END;");
+    return $this->execCursor("BEGIN PKG_CITA.sp_listar(:cur); END;");
   }
 
   public function obtener($id) {
-    $rows = $this->execCursor("BEGIN SP_OBTENER_CITA_NOMBRES(:id,:cur); END;", [":id"=>$id]);
+    $rows = $this->execCursor("BEGIN PKG_CITA.sp_obtener(:id,:cur); END;", [":id" => $id]);
     return $rows[0] ?? null;
   }
 
+  /* === Escrituras (usan PKG_CITA y envían fecha/hora como texto) === */
   public function crear(array $d): int {
     $id = null;
     $this->execProc(
-      "BEGIN PKG_CITA.sp_crear(:id,:p,:d, TO_DATE(:f,'YYYY-MM-DD'), TO_DATE(:h,'HH24:MI'), :e); END;",
+      "BEGIN PKG_CITA.sp_crear(:p,:d,:f,:h,:e,:id); END;",
       [
-        ":id" => $id,
-        ":p"  => $d['ID_PACIENTE'],
-        ":d"  => $d['ID_DOCTOR'],
-        ":f"  => $d['FECHA'],               // 'YYYY-MM-DD'
-        ":h"  => $d['HORA'],                // 'HH:MI'
-        ":e"  => $d['ESTADO']
+        ":p"  => (string)$d['ID_PACIENTE'],   // 'YYYY-MM-DD' / 'HH:MM' ya vienen normalizados desde la vista
+        ":d"  => (string)$d['ID_DOCTOR'],
+        ":f"  => (string)$d['FECHA'],
+        ":h"  => (string)$d['HORA'],
+        ":e"  => (string)$d['ESTADO'],
+        ":id" => &$id,                        // OUT
       ]
     );
     return (int)$id;
@@ -31,19 +32,31 @@ class CitaModel extends OracleHelper {
 
   public function actualizar(array $d): void {
     $this->execProc(
-      "BEGIN PKG_CITA.sp_actualizar(:id,:p,:d, TO_DATE(:f,'YYYY-MM-DD'), TO_DATE(:h,'HH24:MI'), :e); END;",
+      "BEGIN PKG_CITA.sp_actualizar(:id,:p,:d,:f,:h,:e); END;",
       [
-        ":id" => $d['ID_CITA'],
-        ":p"  => $d['ID_PACIENTE'],
-        ":d"  => $d['ID_DOCTOR'],
-        ":f"  => $d['FECHA'],               // 'YYYY-MM-DD'
-        ":h"  => $d['HORA'],                // 'HH:MI'
-        ":e"  => $d['ESTADO']
+        ":id" => (string)$d['ID_CITA'],
+        ":p"  => (string)$d['ID_PACIENTE'],
+        ":d"  => (string)$d['ID_DOCTOR'],
+        ":f"  => (string)$d['FECHA'],   // 'YYYY-MM-DD'
+        ":h"  => (string)$d['HORA'],    // 'HH:MM'
+        ":e"  => (string)$d['ESTADO'],
       ]
     );
   }
 
-  public function eliminar($id): void {
-    $this->execProc("BEGIN PKG_CITA.sp_eliminar(:id); END;", [":id"=>$id]);
+  /* === Eliminación === */
+  public function eliminar($id, bool $forzar = false): void {
+    if ($forzar) {
+      $status = null;
+      $this->execProc(
+        "BEGIN PKG_CITA.sp_eliminar_safe(:id,:force,:status); END;",
+        [":id" => $id, ":force" => 1, ":status" => &$status]
+      );
+      if ($status !== 'OK') {
+        throw new Exception('No se pudo eliminar la cita (tiene relacionados).');
+      }
+    } else {
+      $this->execProc("BEGIN PKG_CITA.sp_eliminar(:id); END;", [":id" => $id]);
+    }
   }
 }

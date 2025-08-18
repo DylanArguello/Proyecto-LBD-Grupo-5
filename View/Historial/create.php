@@ -66,3 +66,5 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   <a class="btn btn-secondary" href="list.php">Cancelar</a>
 </form>
 </main></body></html>
+
+<?php PrintFooter(); ?>

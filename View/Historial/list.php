@@ -42,3 +42,5 @@ catch(Throwable $t){ $error=$t->getMessage(); }
 <?php endif; ?>
 </tbody></table>
 </main></body></html>
+
+<?php PrintFooter(); ?>

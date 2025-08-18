@@ -90,3 +90,5 @@ $estados = ['AGENDADA','CONFIRMADA','CANCELADA'];
 </main>
 </body>
 </html>
+
+<?php PrintFooter(); ?>

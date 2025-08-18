@@ -1,31 +1,11 @@
 <?php
-// View/Recordatorio/edit.php
 include_once __DIR__ . "/../../Controller/RecordatorioController.php";
+include_once $_SERVER["DOCUMENT_ROOT"]."/Proyecto-LBD-Grupo-5/View/layoutInterno.php";
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-$id = $_GET['id'] ?? null;
-if (!$id) { header("Location: list.php"); exit; }
-
-$error = '';
-try { $item = $recordatorioModel->obtener($id); } catch (Throwable $t) { $error = $t->getMessage(); $item = null; }
-
-if (isset($_GET['cancel'])) {
-  try {
-    $recordatorioModel->cancelar($id);
-    $_SESSION['flash_success'] = 'Recordatorio cancelado correctamente.';
-    header("Location: list.php"); exit;
-  } catch (Throwable $t) { $error = $t->getMessage(); }
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  try {
-    $recordatorioModel->reprogramar($id, $_POST['FECHA_ENVIO'] ?? '');
-    $_SESSION['flash_success'] = 'Recordatorio reprogramado correctamente.';
-    header("Location: list.php"); exit;
-  } catch (Throwable $t) { $error = $t->getMessage(); }
-}
-
-include_once $_SERVER["DOCUMENT_ROOT"]."/Proyecto-LBD-Grupo-5/View/layoutInterno.php";
+$vm = recordatorio_handle_edit($_GET, $_POST);
+$item = $vm['item']; $error = $vm['error'];
+$fecha_val = $vm['fecha_val'];
 ?>
 <!DOCTYPE html><html lang="es"><?php PrintCss(); ?>
 <body><?php PrintBarra(); ?>
@@ -48,11 +28,12 @@ include_once $_SERVER["DOCUMENT_ROOT"]."/Proyecto-LBD-Grupo-5/View/layoutInterno
   <div class="mb-2"><strong>Mensaje:</strong> <?=htmlspecialchars($item['MENSAJE']??'')?></div>
   <form method="post" autocomplete="off">
     <label class="form-label">Nueva fecha de envío</label>
-    <input class="form-control mb-3" type="date" name="FECHA_ENVIO"
-           value="<?=htmlspecialchars($item['FECHA_ENVIO']??'')?>" required>
-    <button class="btn btn-success">Reprogramar</button>
+    <input class="form-control mb-3" type="date" name="FECHA_ENVIO" value="<?=htmlspecialchars($fecha_val)?>" required>
+    <button class="btn btn-success">Confirmar</button>
     <a class="btn btn-secondary" href="list.php">Cancelar</a>
   </form>
 <?php endif; ?>
 </main>
 </body></html>
+
+<?php PrintFooter(); ?>

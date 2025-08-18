@@ -9,40 +9,91 @@ require_once $_SERVER["DOCUMENT_ROOT"] . "/Proyecto-LBD-Grupo-5/Model/Recordator
 $citaModel = new CitaModel();
 $recordatorioModel = new RecordatorioModel();
 
+/* ===== Helpers ===== */
+function rows_from($maybe) {
+  $out = [];
+  if (is_object($maybe) && get_class($maybe) === 'OCIStatement') {
+    while ($r = oci_fetch_assoc($maybe)) { $out[] = $r; }
+  } elseif (is_resource($maybe)) {
+    while ($r = oci_fetch_assoc($maybe)) { $out[] = $r; }
+  } elseif (is_array($maybe)) { $out = $maybe; }
+  return $out;
+}
+function toIsoDate(?string $v): string {
+  $v = trim((string)$v);
+  if ($v === '') return '';
+  // soporta 'YYYY-MM-DD' y 'YYYY-MM-DD hh:mi[:ss]'
+  if (preg_match('/^\d{4}-\d{2}-\d{2}/', $v)) return substr($v, 0, 10);
+  // soporta 'DD/MM/YYYY'
+  if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $v, $m)) {
+    return sprintf('%04d-%02d-%02d', (int)$m[3], (int)$m[2], (int)$m[1]);
+  }
+  return $v;
+}
+function toHHMM(?string $v): string {
+  $v = preg_replace('/[^0-9:]/', '', (string)$v);
+  return substr($v, 0, 5); // HH:MM
+}
+
+/* ===== Data ===== */
 $proximasCitas = [];
 $proximosRecordatorios = [];
 $errCitas = $errRecs = '';
 
 try {
-  $citas = $citaModel->listar(); // FECHA 'YYYY-MM-DD', HORA 'HH:MI'
-  // Filtrar próximas (hoy o futuro) y ordenar por FECHA+HORA
-  $hoy = date('Y-m-d');
-  $proximasCitas = array_values(array_filter($citas, function($c) use ($hoy) {
-    $f = $c['FECHA'] ?? '';
-    return $f && $f >= $hoy;
+  $citasRaw = $citaModel->listar();               // puede venir OCIStatement
+  $citas    = rows_from($citasRaw);
+  $hoy      = date('Y-m-d');
+
+  // normalizar y filtrar próximas
+  $citasNorm = array_map(function($c){
+    return [
+      'PACIENTE' => $c['PACIENTE'] ?? ($c['ID_PACIENTE'] ?? ''),
+      'DOCTOR'   => $c['DOCTOR']   ?? ($c['ID_DOCTOR']   ?? ''),
+      'FECHA'    => toIsoDate($c['FECHA'] ?? ''),
+      'HORA'     => toHHMM($c['HORA'] ?? ''),
+    ];
+  }, $citas);
+
+  $proximasCitas = array_values(array_filter($citasNorm, function($c) use ($hoy) {
+    return ($c['FECHA'] !== '' && $c['FECHA'] >= $hoy);
   }));
+
   usort($proximasCitas, function($a,$b){
-    $ka = ($a['FECHA']??'') . ' ' . ($a['HORA']??'');
-    $kb = ($b['FECHA']??'') . ' ' . ($b['HORA']??'');
-    return strcmp($ka,$kb);
+    $ka = ($a['FECHA'] ?? '') . ' ' . ($a['HORA'] ?? '');
+    $kb = ($b['FECHA'] ?? '') . ' ' . ($b['HORA'] ?? '');
+    return strcmp($ka, $kb);
   });
-  // dejar top 5
+
   $proximasCitas = array_slice($proximasCitas, 0, 5);
 } catch (Throwable $t) {
   $errCitas = $t->getMessage();
 }
 
 try {
-  $recs = $recordatorioModel->listar(); // FECHA_ENVIO 'YYYY-MM-DD'
-  $hoy = date('Y-m-d');
-  $recs = array_values(array_filter($recs, function($r) use ($hoy){
-    $f = $r['FECHA_ENVIO'] ?? '';
-    return $f && $f >= $hoy;
+  $recsRaw = $recordatorioModel->listar();        // puede venir OCIStatement
+  $recs    = rows_from($recsRaw);
+  $hoy     = date('Y-m-d');
+
+  // normalizar y filtrar próximos
+  $recsNorm = array_map(function($r){
+    return [
+      'ID_RECORDATORIO' => $r['ID_RECORDATORIO'] ?? null,
+      'ID_CITA'         => $r['ID_CITA'] ?? null,
+      'MENSAJE'         => $r['MENSAJE'] ?? '',
+      'FECHA_ENVIO'     => toIsoDate($r['FECHA_ENVIO'] ?? ''),
+    ];
+  }, $recs);
+
+  $recsUpcoming = array_values(array_filter($recsNorm, function($r) use ($hoy){
+    return ($r['FECHA_ENVIO'] !== '' && $r['FECHA_ENVIO'] >= $hoy);
   }));
-  usort($recs, function($a,$b){
-    return strcmp($a['FECHA_ENVIO']??'', $b['FECHA_ENVIO']??'');
+
+  usort($recsUpcoming, function($a,$b){
+    return strcmp($a['FECHA_ENVIO'] ?? '', $b['FECHA_ENVIO'] ?? '');
   });
-  $proximosRecordatorios = array_slice($recs, 0, 5);
+
+  $proximosRecordatorios = array_slice($recsUpcoming, 0, 5);
 } catch (Throwable $t) {
   $errRecs = $t->getMessage();
 }
@@ -210,7 +261,7 @@ try {
           </div>
         </div>
 
-        <!-- Recordatorios (NUEVO) -->
+        <!-- Recordatorios (acceso) -->
         <div class="col-sm-6 col-md-4 col-lg-3">
           <div class="card text-center shadow-sm h-100">
             <div class="card-body d-flex flex-column">
@@ -228,27 +279,26 @@ try {
     </div> <!-- container -->
   </section>
 
-  <!-- Quick Overview -->
+  <!-- Quick Overview: Próximas Consultas -->
   <section class="py-5 bg-light">
     <div class="container">
       <div class="row g-4">
-        <!-- Próximas Consultas -->
-        <div class="col-lg-7">
+        <div class="col-12">
           <h3 class="mb-4">Próximas Consultas</h3>
           <?php if ($errCitas): ?>
             <div class="alert alert-danger"><?= htmlspecialchars($errCitas) ?></div>
           <?php endif; ?>
-          <table class="table table-hover mb-5">
+          <table class="table table-hover mb-0">
             <thead class="table-secondary">
               <tr><th>Paciente</th><th>Doctor</th><th>Fecha</th><th>Hora</th></tr>
             </thead>
             <tbody>
               <?php if ($proximasCitas): foreach($proximasCitas as $c): ?>
                 <tr>
-                  <td><?= htmlspecialchars($c['PACIENTE'] ?? '') ?></td>
-                  <td><?= htmlspecialchars($c['DOCTOR']   ?? '') ?></td>
-                  <td><?= htmlspecialchars($c['FECHA']    ?? '') ?></td>
-                  <td><?= htmlspecialchars(substr($c['HORA'] ?? '',0,5)) ?></td>
+                  <td><?= htmlspecialchars($c['PACIENTE']) ?></td>
+                  <td><?= htmlspecialchars($c['DOCTOR'])   ?></td>
+                  <td><?= htmlspecialchars($c['FECHA'])    ?></td>
+                  <td><?= htmlspecialchars($c['HORA'])     ?></td>
                 </tr>
               <?php endforeach; else: ?>
                 <tr><td colspan="4" class="text-center">Sin próximas citas</td></tr>
@@ -256,27 +306,55 @@ try {
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <!-- Recordatorios -->
-        <div class="col-lg-5">
-          <h3 class="mb-4">Recordatorios</h3>
-          <?php if ($errRecs): ?>
-            <div class="alert alert-danger"><?= htmlspecialchars($errRecs) ?></div>
-          <?php endif; ?>
-          <ul class="list-group">
-            <?php if ($proximosRecordatorios): foreach($proximosRecordatorios as $r): ?>
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <?= htmlspecialchars(mb_strimwidth($r['MENSAJE'] ?? '', 0, 60, '…')) ?>
-                <span>
-                  <span class="badge bg-secondary me-2"><?= htmlspecialchars($r['FECHA_ENVIO'] ?? '') ?></span>
-                  <a href="../Recordatorio/list.php" class="btn btn-sm btn-outline-secondary">Ver</a>
-                </span>
-              </li>
-            <?php endforeach; else: ?>
-              <li class="list-group-item">No hay recordatorios próximos</li>
-            <?php endif; ?>
-          </ul>
+  <!-- Recordatorios al fondo -->
+  <section class="py-5 border-top" id="recordatorios-bottom">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Recordatorios (próximos)</h3>
+        <div class="d-flex gap-2">
+          <a href="../Recordatorio/list.php" class="btn btn-outline-secondary btn-sm">Ver todos</a>
+          <a href="../Recordatorio/create.php" class="btn btn-primary btn-sm">Nuevo recordatorio</a>
         </div>
+      </div>
+
+      <?php if ($errRecs): ?>
+        <div class="alert alert-danger"><?= htmlspecialchars($errRecs) ?></div>
+      <?php endif; ?>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-secondary">
+            <tr>
+              <th>Mensaje</th>
+              <th class="text-center" style="width:140px;">Fecha envío</th>
+              <th class="text-end" style="width:220px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php if ($proximosRecordatorios): foreach($proximosRecordatorios as $r): ?>
+              <tr>
+                <td><?= htmlspecialchars(mb_strimwidth($r['MENSAJE'], 0, 90, '…')) ?></td>
+                <td class="text-center">
+                  <span class="badge bg-secondary"><?= htmlspecialchars($r['FECHA_ENVIO']) ?></span>
+                </td>
+                <td class="text-end">
+                  <a href="../Recordatorio/edit.php?id=<?=urlencode($r['ID_RECORDATORIO'])?>" class="btn btn-sm btn-outline-primary">Reprogramar</a>
+                  <a href="../Recordatorio/edit.php?id=<?=urlencode($r['ID_RECORDATORIO'])?>&cancel=1"
+                     class="btn btn-sm btn-outline-danger"
+                     onclick="return confirm('¿Cancelar este recordatorio? Esta acción no se puede deshacer.');">
+                     Cancelar
+                  </a>
+                </td>
+              </tr>
+            <?php endforeach; else: ?>
+              <tr><td colspan="3" class="text-center">No hay recordatorios próximos</td></tr>
+            <?php endif; ?>
+          </tbody>
+        </table>
       </div>
     </div>
   </section>

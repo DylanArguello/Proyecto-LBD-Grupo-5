@@ -1,71 +1,17 @@
 <?php
 // View/Cita/edit.php
 include_once __DIR__ . "/../../Controller/CitaController.php";
-
-$id = $_GET['id'] ?? null;
-if (!$id) { header("Location: list.php"); exit; }
-
-$error = '';
-
-// utilidades locales para normalizar formatos
-$toIsoDate = function (?string $v): string {
-  $v = trim((string)$v);
-  if ($v === '') return '';
-  // si viene dd/mm/yyyy -> yyyy-mm-dd
-  if (preg_match('#^(\d{2})/(\d{2})/(\d{4})$#', $v, $m)) {
-    return sprintf('%04d-%02d-%02d', (int)$m[3], (int)$m[2], (int)$m[1]);
-  }
-  // ya está en yyyy-mm-dd (de inputs type="date" o del SP)
-  return $v;
-};
-$toHHMM = function (?string $v): string {
-  $v = preg_replace('/[^0-9:]/', '', (string)$v);
-  return substr($v, 0, 5); // HH:MM
-};
-
-// eliminar
-if (isset($_GET['delete'])) {
-  try {
-    $citaModel->eliminar($id);
-    header("Location: list.php"); exit;
-  } catch (Throwable $t) {
-    $error = $t->getMessage();
-  }
-}
-
-// actualizar
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  try {
-    $citaModel->actualizar([
-      'ID_CITA'     => $id,
-      'ID_PACIENTE' => $_POST['ID_PACIENTE'] ?? '',
-      'ID_DOCTOR'   => $_POST['ID_DOCTOR']   ?? '',
-      'FECHA'       => $toIsoDate($_POST['FECHA'] ?? ''), // -> 'YYYY-MM-DD'
-      'HORA'        => $toHHMM($_POST['HORA'] ?? ''),      // -> 'HH:MM'
-      'ESTADO'      => $_POST['ESTADO'] ?? 'AGENDADA',
-    ]);
-    header("Location: list.php"); exit;
-  } catch (Throwable $t) {
-    $error = $t->getMessage();
-  }
-}
-
-// cargar datos
-try {
-  $item      = $citaModel->obtener($id);
-  $pacientes = $pacienteModel->listar();
-  $doctores  = $doctorModel->listar();
-} catch (Throwable $t) {
-  $error = $t->getMessage();
-  $item = null; $pacientes = $doctores = [];
-}
-
-// valores para los inputs
-$fecha_val = $toIsoDate($item['FECHA'] ?? '');
-$hora_val  = $toHHMM($item['HORA'] ?? '');
-$estados   = ['AGENDADA','CONFIRMADA','CANCELADA'];
-
 include_once $_SERVER["DOCUMENT_ROOT"]."/Proyecto-LBD-Grupo-5/View/layoutInterno.php";
+
+$vm = cita_handle_edit($_GET, $_POST);
+$item      = $vm['item'];
+$pacientes = $vm['pacientes'];
+$doctores  = $vm['doctores'];
+$dispon    = $vm['dispon'];
+$fecha_val = $vm['fecha_val'];
+$hora_val  = $vm['hora_val'];
+$estados   = $vm['estados'];
+$error     = $vm['error'];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -122,6 +68,22 @@ include_once $_SERVER["DOCUMENT_ROOT"]."/Proyecto-LBD-Grupo-5/View/layoutInterno
       <?php endforeach; ?>
     </select>
 
+    <?php
+      $cd = (int)($item['ID_DOCTOR'] ?? 0);
+      $slots = array_filter($dispon, fn($x) => (int)$x['ID_DOCTOR'] === $cd);
+      if ($slots):
+    ?>
+      <div class="alert alert-info">
+        <strong>Disponibilidad del doctor:</strong>
+        <ul class="mb-0">
+          <?php foreach ($slots as $s): ?>
+            <li><?= htmlspecialchars($s['DIA_SEMANA']) ?>:
+              <?= htmlspecialchars(substr($s['HORA_INICIO'],0,5)) ?>–<?= htmlspecialchars(substr($s['HORA_FIN'],0,5)) ?></li>
+          <?php endforeach; ?>
+        </ul>
+      </div>
+    <?php endif; ?>
+
     <button class="btn btn-success">Actualizar</button>
     <a class="btn btn-secondary" href="list.php">Cancelar</a>
   </form>
@@ -129,3 +91,5 @@ include_once $_SERVER["DOCUMENT_ROOT"]."/Proyecto-LBD-Grupo-5/View/layoutInterno
 </main>
 </body>
 </html>
+
+<?php PrintFooter(); ?>

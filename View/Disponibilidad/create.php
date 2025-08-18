@@ -57,3 +57,5 @@ $dias=['LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO','DOMINGO'];
   <a class="btn btn-secondary" href="list.php">Cancelar</a>
 </form>
 </main></body></html>
+
+<?php PrintFooter(); ?>

@@ -21,7 +21,7 @@ catch(Throwable $t){ $error=$t->getMessage(); }
 <?php if($error):?><div class="alert alert-danger"><?=htmlspecialchars($error)?></div><?php endif;?>
 <a class="btn btn-primary mb-3" href="create.php">Nuevo Pago</a>
 <table class="table table-bordered table-sm">
-<thead><tr><th>ID</th><th>Paciente</th><th>Fecha</th><th>Monto</th><th>Método</th><th>Estado</th><th>Acciones</th></tr></thead>
+<thead><tr><th>ID</th><th>Paciente</th><th>Fecha</th><th>Monto</th><th>Método</th><th>Acciones</th></tr></thead>
 <tbody>
 <?php foreach($items as $r): ?>
 <tr>
@@ -30,7 +30,6 @@ catch(Throwable $t){ $error=$t->getMessage(); }
   <td><?=htmlspecialchars($r['FECHA_PAGO']??$r['FECHA']??'')?></td>
   <td><?=htmlspecialchars($r['MONTO']??'')?></td>
   <td><?=htmlspecialchars($r['METODO']??$r['METODO_PAGO']??'')?></td>
-  <td><?=htmlspecialchars($r['ESTADO']??'')?></td>
   <td>
     <a class="btn btn-sm btn-warning" href="edit.php?id=<?=urlencode($r['ID_PAGO'])?>">Editar</a>
     <a class="btn btn-sm btn-danger" href="edit.php?id=<?=urlencode($r['ID_PAGO'])?>&delete=1" onclick="return confirm('¿Eliminar?')">Eliminar</a>
@@ -38,3 +37,5 @@ catch(Throwable $t){ $error=$t->getMessage(); }
 </tr>
 <?php endforeach; if(!$items):?><tr><td colspan="7" class="text-center">Sin registros</td></tr><?php endif;?>
 </tbody></table></main></body></html>
+
+<?php PrintFooter(); ?>

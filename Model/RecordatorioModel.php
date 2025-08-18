@@ -10,16 +10,18 @@ class RecordatorioModel extends OracleHelper {
   }
 
   /** Crear: usa OUT id del paquete (no dependemos de SP_GENERAR_ID_RECORDATORIO) */
-  public function crear(array $d): int {
-    $id = null; // IN OUT
-    $this->execProc("BEGIN PKG_RECORDATORIO.sp_crear_recordatorio(:id,:cita,:msg,:fecha); END;", [
-      ":id"    => $id,
-      ":cita"  => $d['ID_CITA'],
-      ":msg"   => $d['MENSAJE'],
-      ":fecha" => $d['FECHA_ENVIO'], // 'YYYY-MM-DD'
-    ]);
-    return (int)$id;
-  }
+public function crear(array $d): int {
+  $id = null; // IN OUT
+  // Orden correcto: cita, mensaje, fecha, id
+  $this->execProc("BEGIN PKG_RECORDATORIO.sp_crear_recordatorio(:cita,:msg,:fecha,:id); END;", [
+    ":cita"  => $d['ID_CITA'],
+    ":msg"   => $d['MENSAJE'],
+    ":fecha" => $d['FECHA_ENVIO'], // 'YYYY-MM-DD'
+    ":id"    => $id,
+  ]);
+  return (int)$id;
+}
+
 
   /** Reprogramar: fecha string 'YYYY-MM-DD' */
   public function reprogramar($id, $fecha): void {

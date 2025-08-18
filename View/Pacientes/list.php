@@ -28,4 +28,8 @@ try { $items = $pacienteModel->listar(); } catch (Throwable $t) { $error=$t->get
     <?php endforeach; if(!$items): ?><tr><td colspan="6" class="text-center">Sin registros</td></tr><?php endif; ?>
     </tbody>
   </table>
+
+  
 </main></body></html>
+
+<?php PrintFooter(); ?>
